@@ -1,17 +1,59 @@
-@import "tailwindcss";
+/* ==============================================
+   TAILWIND IMPORTS
+   ============================================== */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* ==============================================
+   CSS VARIABLES
+   ============================================== */
 :root {
+  /* Base Colors */
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* PKC Brand Colors */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  
+  /* Status Colors */
+  --success-50: #f0fdf4;
+  --success-100: #dcfce7;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  
+  --danger-50: #fef2f2;
+  --danger-100: #fee2e2;
+  --danger-500: #ef4444;
+  --danger-600: #dc2626;
+  
+  /* Gray Scale */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  --kujang-green: #009a44;
+  --kujang-green-bg: #e6f7ef;
+  --kujang-yellow: #FFD500;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Dark Mode */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -19,8 +61,523 @@
   }
 }
 
+/* ==============================================
+   BASE STYLES
+   ============================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
 body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+  max-width: 100vw;
+  min-height: 100vh; /* Tambahkan ini */
+  height: 100%; /* Tambahkan ini */
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+#__next {
+  min-height: 100vh;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==============================================
+   SCROLLBAR STYLES
+   ============================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--gray-100);
+}
+
+/* Firefox Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-300) var(--gray-100);
+}
+
+/* ==============================================
+   FOCUS STATES
+   ============================================== */
+*:focus {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ==============================================
+   BUTTON COMPONENTS
+   ============================================== */
+.btn {
+  @apply inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-sm {
+  @apply px-3 py-1.5 text-sm;
+}
+
+.btn-md {
+  @apply px-4 py-2 text-sm;
+}
+
+.btn-lg {
+  @apply px-6 py-3 text-base;
+}
+
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white focus:ring-blue-500 shadow-sm hover:shadow-md;
+}
+
+.btn-secondary {
+  @apply bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 focus:ring-gray-500;
+}
+
+.btn-outline {
+  @apply border border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-700 focus:ring-blue-500 bg-white;
+}
+
+.btn-success {
+  @apply bg-green-600 hover:bg-green-700 active:bg-green-800 text-white focus:ring-green-500 shadow-sm hover:shadow-md;
+}
+
+.btn-warning {
+  @apply bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 text-white focus:ring-yellow-500 shadow-sm hover:shadow-md;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 active:bg-red-800 text-white focus:ring-red-500 shadow-sm hover:shadow-md;
+}
+
+.btn-ghost {
+  @apply hover:bg-gray-100 active:bg-gray-200 text-gray-700 focus:ring-gray-500;
+}
+
+/* ==============================================
+   CARD COMPONENTS
+   ============================================== */
+.card {
+  @apply bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden;
+}
+
+.card-hover {
+  @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5;
+}
+
+.card-header {
+  @apply px-6 py-4 border-b border-gray-200 bg-gray-50/50;
+}
+
+.card-content {
+  @apply px-6 py-4;
+}
+
+.card-footer {
+  @apply px-6 py-4 border-t border-gray-200 bg-gray-50/30;
+}
+
+/* ==============================================
+   BADGE COMPONENTS
+   ============================================== */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset;
+}
+
+.badge-sm {
+  @apply px-2 py-0.5 text-xs;
+}
+
+.badge-md {
+  @apply px-2.5 py-1 text-sm;
+}
+
+.badge-lg {
+  @apply px-3 py-1.5 text-sm;
+}
+
+.badge-primary {
+  @apply bg-blue-50 text-blue-700 ring-blue-600/20;
+}
+
+.badge-success {
+  @apply bg-green-50 text-green-700 ring-green-600/20;
+}
+
+.badge-warning {
+  @apply bg-yellow-50 text-yellow-700 ring-yellow-600/20;
+}
+
+.badge-danger {
+  @apply bg-red-50 text-red-700 ring-red-600/20;
+}
+
+.badge-gray {
+  @apply bg-gray-50 text-gray-700 ring-gray-600/20;
+}
+
+/* Status Specific Badges */
+.status-todo {
+  @apply badge-gray;
+}
+
+.status-in-progress {
+  @apply badge-primary;
+}
+
+.status-completed {
+  @apply badge-success;
+}
+
+.status-carry-over {
+  @apply badge-warning;
+}
+
+/* Priority Badges */
+.priority-low {
+  @apply badge-success;
+}
+
+.priority-medium {
+  @apply badge-warning;
+}
+
+.priority-high {
+  @apply bg-orange-50 text-orange-700 ring-orange-600/20;
+}
+
+.priority-urgent {
+  @apply badge-danger;
+}
+
+/* ==============================================
+   FORM COMPONENTS
+   ============================================== */
+.form-group {
+  @apply space-y-1;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700;
+}
+
+.form-input {
+  @apply block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 
+         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+         disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed;
+}
+
+.form-textarea {
+  @apply form-input resize-y min-h-20;
+}
+
+.form-select {
+  @apply form-input bg-white cursor-pointer;
+}
+
+.form-checkbox,
+.form-radio {
+  @apply h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2;
+}
+
+.form-error {
+  @apply text-red-600 text-sm;
+}
+
+.form-help {
+  @apply text-gray-500 text-sm;
+}
+
+/* Input States */
+.form-input.error {
+  @apply border-red-300 focus:border-red-500 focus:ring-red-500;
+}
+
+.form-input.success {
+  @apply border-green-300 focus:border-green-500 focus:ring-green-500;
+}
+
+/* ==============================================
+   UTILITY CLASSES
+   ============================================== */
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.bounce-in {
+  animation: bounceIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Hover Effects */
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+.hover-shadow {
+  @apply transition-shadow duration-200 hover:shadow-lg;
+}
+
+.hover-scale {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+/* Loading States */
+.loading {
+  @apply opacity-75 pointer-events-none;
+}
+
+.skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* ==============================================
+   COMPONENT SPECIFIC STYLES
+   ============================================== */
+
+/* Task Board */
+.task-board {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+.task-column {
+  @apply bg-gray-50 rounded-xl p-4 min-h-96;
+}
+
+.task-card {
+  @apply card card-hover p-4 mb-3 cursor-pointer;
+}
+
+/* Meeting Components */
+.meeting-card {
+  @apply card card-hover p-6;
+}
+
+.agenda-item {
+  @apply flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors duration-150;
+}
+
+/* Navigation */
+.nav-link {
+  @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150;
+}
+
+.nav-link.active {
+  @apply bg-blue-100 text-blue-700;
+}
+
+.nav-link:hover:not(.active) {
+  @apply bg-gray-100 text-gray-700;
+}
+
+/* ==============================================
+   NOTIFICATION SYSTEM
+   ============================================== */
+.notification {
+  @apply fixed top-4 right-4 z-50 max-w-sm w-full bg-white border rounded-xl shadow-lg slide-in;
+}
+
+.notification-success {
+  @apply border-l-4 border-l-green-500;
+}
+
+.notification-warning {
+  @apply border-l-4 border-l-yellow-500;
+}
+
+.notification-error {
+  @apply border-l-4 border-l-red-500;
+}
+
+.notification-info {
+  @apply border-l-4 border-l-blue-500;
+}
+
+/* ==============================================
+   RICH TEXT EDITOR
+   ============================================== */
+@layer components {
+  .ProseMirror {
+    @apply outline-none prose prose-sm max-w-none p-4;
+  }
+
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: #9ca3af;
+    pointer-events: none;
+    height: 0;
+  }
+}
+
+
+/* ==============================================
+   RESPONSIVE UTILITIES
+   ============================================== */
+.container-fluid {
+  @apply w-full px-4 sm:px-6 lg:px-8;
+}
+
+.section-padding {
+  @apply py-8 lg:py-12;
+}
+
+/* ==============================================
+   PRINT STYLES
+   ============================================== */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-before: always;
+  }
+  
+  .print-break-after {
+    page-break-after: always;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
+
+/* ==============================================
+   ACCESSIBILITY
+   ============================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ==============================================
+   LAYOUT STYLES
+   ============================================== */
+.main-layout {
+  display: flex;
+  min-height: 100vh;
+  height: 100%;
+  flex: 1;
+}
+
+.sidebar-layout {
+  flex-shrink: 0;
+}
+
+.content-layout {
+  flex: 1;
+  overflow: auto;
+  min-height: 100vh;
+}
+
+
