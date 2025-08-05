@@ -16,7 +16,7 @@ export default function LogoutButton({ className = "", children = "Logout" }: Lo
     deleteCookie('auth-token')
     
     // Redirect ke signin
-    router.push('/auth/signin')
+    router.push('/')
     router.refresh()
   }
 

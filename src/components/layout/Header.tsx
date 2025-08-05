@@ -25,7 +25,7 @@ export const Header = () => {
     document.cookie = 'auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     
     // Redirect ke halaman signin
-    router.push('/auth/signin');
+    router.push('/');
     
     // Close dropdown
     setIsProfileDropdownOpen(false);

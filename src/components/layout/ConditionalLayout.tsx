@@ -12,13 +12,18 @@ interface ConditionalLayoutProps {
 export default function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
   
-  // Halaman yang tidak perlu header dan sidebar (hanya auth pages)
-  const authPages = ['/auth/signin', '/auth/signup'];
-  const isAuthPage = authPages.includes(pathname);
+  // Halaman login ada di root (/)
+  const isLoginPage = pathname === '/';
 
-  if (isAuthPage) {
-    // Layout untuk halaman authentication (tanpa header & sidebar)
-    return <>{children}</>;
+  if (isLoginPage) {
+    // Layout untuk halaman login (tanpa header & sidebar)
+    return (
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          {children}
+        </div>
+      </div>
+    );
   }
 
   // Layout untuk dashboard dan halaman lainnya (dengan header & sidebar)

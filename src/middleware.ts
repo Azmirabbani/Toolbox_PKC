@@ -8,35 +8,24 @@ export function middleware(request: NextRequest) {
   // Ambil token dari cookies
   const token = request.cookies.get('auth-token')?.value
   
-  // Definisikan routes yang perlu auth (hapus /dashboard karena tidak ada)
-  const protectedRoutes = ['/tasks', '/meetings', '/settings', '/team']
-  const authRoutes = ['/auth/signin', '/auth/signup']
+  // Definisikan routes yang perlu auth
+  const protectedRoutes = ['/dashboard', '/tasks', '/meetings', '/settings', '/team', '/attendance']
   
   const { pathname } = request.nextUrl
   
   // Jika user belum login dan mencoba akses protected routes
   if (!token && protectedRoutes.some(route => pathname.startsWith(route))) {
-    console.log('🔒 Redirecting to signin - no token found')
-    const signinUrl = new URL('/auth/signin', request.url)
-    return NextResponse.redirect(signinUrl)
+    console.log('🔒 Redirecting to login - no token found')
+    const loginUrl = new URL('/', request.url) // Redirect ke root (login page)
+    return NextResponse.redirect(loginUrl)
   }
   
-  // Jika user sudah login dan mencoba akses auth pages
-  if (token && authRoutes.some(route => pathname.startsWith(route))) {
-    console.log('✅ Redirecting to home - user already logged in')
-    const homeUrl = new URL('/', request.url)
-    return NextResponse.redirect(homeUrl)
+  // Jika user sudah login dan akses root, redirect ke dashboard
+  if (token && pathname === '/') {
+    console.log('✅ Redirecting to dashboard - user already logged in')
+    const dashboardUrl = new URL('/dashboard', request.url)
+    return NextResponse.redirect(dashboardUrl)
   }
-  
-  // Redirect root ke signin jika belum login
-  if (pathname === '/' && !token) {
-    console.log('🏠 Redirecting root to signin')
-    const signinUrl = new URL('/auth/signin', request.url)
-    return NextResponse.redirect(signinUrl)
-  }
-  
-  // Jika sudah login dan akses root, biarkan lewat (tidak redirect)
-  // Karena root (/) sudah ada konten dashboard
   
   console.log('✨ Middleware allowing request to continue')
   return NextResponse.next()
