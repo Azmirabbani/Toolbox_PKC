@@ -15,6 +15,7 @@ import {
   BoltIcon,
   FolderIcon,
   PlusIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 
 interface NavigationItem {
@@ -34,7 +35,7 @@ const navigationSections: NavigationSection[] = [
   {
     title: "Main Menu",
     items: [
-      { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+      { name: 'Dashboard', href: '/', icon: HomeIcon },
       { 
         name: 'Tasks', 
         href: '/tasks', 
@@ -50,6 +51,7 @@ const navigationSections: NavigationSection[] = [
         badgeColor: 'bg-green-100 text-green-600'
       },
       { name: 'Team', href: '/team', icon: UsersIcon },
+      { name: 'Attendance', href: '/attendance', icon: ClockIcon },
       { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
       { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
     ]
@@ -61,6 +63,9 @@ export const Sidebar = () => {
   const { isOpen } = useSidebar();
 
   const isActiveRoute = (href: string): boolean => {
+    if (href === '/') {
+      return pathname === '/';
+    }
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
@@ -101,7 +106,7 @@ export const Sidebar = () => {
 
         {/* Navigation Menu */}
         <div className="flex-1 p-4 space-y-6 overflow-y-auto custom-scrollbar">
-          {navigationSections.map((section, sectionIndex) => (
+          {navigationSections.map((section) => (
             <div key={section.title}>
               {isOpen && (
                 <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">
@@ -122,27 +127,23 @@ export const Sidebar = () => {
                         transition-all duration-200 relative overflow-hidden
                         ${isActive
                           ? 'bg-gradient-to-r from-[#009a44] to-[#007d37] text-white shadow-md'
-                          : 'text-gray-600 hover:bg-[#e6f7ef]/60 hover:text-[#009a44]'
-                        }
+                          : 'text-gray-600 hover:bg-[#e6f7ef]/60 hover:text-[#009a44]'}
                         ${!isOpen && 'justify-center px-2'}
                       `}
                       aria-current={isActive ? 'page' : undefined}
                       title={!isOpen ? item.name : undefined}
                     >
-                      {/* Icon */}
                       <div className="flex-shrink-0">
                         <item.icon className={`w-5 h-5 transition-transform group-hover:scale-105 ${
                           isActive ? 'text-white' : ''
                         }`} />
                       </div>
                       
-                      {/* Label and Badge */}
                       {isOpen && (
                         <div className="flex items-center justify-between min-w-0 flex-1">
                           <span className="font-medium truncate">
                             {item.name}
                           </span>
-                          
                           {item.badge && (
                             <span className={`
                               ml-2 px-2 py-0.5 text-xs rounded-full font-medium flex-shrink-0
@@ -159,16 +160,6 @@ export const Sidebar = () => {
               </nav>
             </div>
           ))}
-
-          {/* Quick Action Button */}
-          {isOpen && (
-            <div className="pt-2">
-              <button className="w-full flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-[#FFD500] to-[#E6C200] text-gray-900 rounded-lg hover:from-[#E6C200] hover:to-[#CCB000] transition-all duration-200 hover:shadow-md group font-medium">
-                <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                <span className="font-medium">New Task</span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
 

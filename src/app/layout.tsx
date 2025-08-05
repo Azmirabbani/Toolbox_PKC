@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { SidebarProvider } from "@/context/SidebarContext";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
+import ConditionalLayout from "@/components/layout/ConditionalLayout";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,25 +26,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
       <body className="antialiased bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 h-full">
-        <SidebarProvider>
-          <div className="flex h-screen">
-            {/* Sidebar */}
-            <Sidebar />
-            
-            {/* Main Layout */}
-            <div className="flex flex-col flex-1 h-full">
-              {/* Header */}
-              <Header />
-              
-              {/* Main Content */}
-              <main className="flex-1 p-6 overflow-y-auto">
-                <div className="max-w-7xl mx-auto">
-                  {children}
-                </div>
-              </main>
-            </div>
-          </div>
-        </SidebarProvider>
+        <ConditionalLayout>
+          {children}
+        </ConditionalLayout>
       </body>
     </html>
   );
