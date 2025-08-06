@@ -51,8 +51,6 @@ const navigationSections: NavigationSection[] = [
         badgeColor: 'bg-green-100 text-green-600'
       },
       { name: 'Team', href: '/team', icon: UsersIcon },
-      { name: 'Attendance', href: '/attendance', icon: ClockIcon },
-      { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
       { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
     ]
   }
@@ -103,7 +101,7 @@ export const Sidebar = () => {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg overflow-hidden flex-shrink-0">
                 <Image
-                  src="/Logo_kujang.jpg"
+                  src="/Logo_kujang.png"
                   alt="Logo Kujang"
                   width={40}
                   height={40}
