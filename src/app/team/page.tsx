@@ -17,7 +17,9 @@ import {
   UserPlus,
   Shield,
   Star,
-  X
+  X,
+  Menu,
+  ChevronDown
 } from "lucide-react"
 
 type TeamMember = {
@@ -41,6 +43,8 @@ export default function TeamPage() {
   const [roleFilter, setRoleFilter] = useState("all")
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
+  const [expandedMember, setExpandedMember] = useState<string | null>(null)
 
   // Sample data team members
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
@@ -222,6 +226,7 @@ export default function TeamPage() {
     setEditingMember(member)
     setNewMember(member)
     setShowAddForm(true)
+    setExpandedMember(null) // Close expanded view
   }
 
   const handleUpdateMember = () => {
@@ -251,6 +256,7 @@ export default function TeamPage() {
   const handleDeleteMember = (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus anggota tim ini?")) {
       setTeamMembers(teamMembers.filter(member => member.id !== id))
+      setExpandedMember(null)
     }
   }
 
@@ -293,8 +299,29 @@ export default function TeamPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-green-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      {/* Mobile Header */}
+      <div className="lg:hidden sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 py-3 z-40">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center">
+              <Users className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Tim Management</h1>
+              <p className="text-xs text-gray-600">{activeMembers} anggota aktif</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setShowAddForm(true)}
+            className="p-2 bg-green-600 text-white rounded-lg"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden lg:block bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -329,9 +356,60 @@ export default function TeamPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* Filters */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        {/* Mobile Search & Filter Toggle */}
+        <div className="lg:hidden mb-4">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Cari anggota tim..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+            />
+          </div>
+          
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 flex items-center justify-between text-gray-700"
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              <span>Filter ({filteredMembers.length}/{teamMembers.length})</span>
+            </div>
+            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {showFilters && (
+            <div className="bg-white border border-gray-300 rounded-lg mt-2 p-4 space-y-3">
+              <select 
+                value={departmentFilter} 
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="all">Semua Departemen</option>
+                {departments.map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+
+              <select 
+                value={roleFilter} 
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="all">Semua Role</option>
+                {roles.map(role => (
+                  <option key={role.value} value={role.value}>{role.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Filters */}
+        <div className="hidden lg:block bg-white rounded-2xl p-6 shadow-sm mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -375,9 +453,9 @@ export default function TeamPage() {
 
         {/* Add/Edit Form */}
         {showAddForm && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm mb-6 border-2 border-green-200">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm mb-6 border-2 border-green-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-lg font-semibold text-gray-900">
                 {editingMember ? 'Edit Anggota Tim' : 'Tambah Anggota Tim Baru'}
               </h3>
               <button 
@@ -399,61 +477,61 @@ export default function TeamPage() {
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Nama Lengkap *</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Nama Lengkap *</label>
                 <input
                   type="text"
                   value={newMember.name || ""}
                   onChange={(e) => setNewMember({...newMember, name: e.target.value})}
                   placeholder="Masukkan nama lengkap"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Team ID *</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Team ID *</label>
                 <input
                   type="text"
                   value={newMember.employeeId || ""}
                   onChange={(e) => setNewMember({...newMember, employeeId: e.target.value})}
                   placeholder="TM001"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Email *</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Email *</label>
                 <input
                   type="email"
                   value={newMember.email || ""}
                   onChange={(e) => setNewMember({...newMember, email: e.target.value})}
                   placeholder="nama@pupukkujang.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">No. Telepon</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">No. Telepon</label>
                 <input
                   type="text"
                   value={newMember.phone || ""}
                   onChange={(e) => setNewMember({...newMember, phone: e.target.value})}
                   placeholder="+62 812-3456-7890"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Departemen</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Departemen</label>
                 <select 
                   value={newMember.department || ""} 
                   onChange={(e) => setNewMember({...newMember, department: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                 >
                   <option value="">Pilih departemen</option>
                   {departments.map(dept => (
@@ -463,11 +541,11 @@ export default function TeamPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Role Tim</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Role Tim</label>
                 <select 
                   value={newMember.role || ""} 
                   onChange={(e) => setNewMember({...newMember, role: e.target.value as any})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                 >
                   {roles.map(role => (
                     <option key={role.value} value={role.value}>{role.label}</option>
@@ -476,43 +554,43 @@ export default function TeamPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Posisi</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Posisi</label>
                 <input
                   type="text"
                   value={newMember.position || ""}
                   onChange={(e) => setNewMember({...newMember, position: e.target.value})}
                   placeholder="Software Engineer"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Tanggal Bergabung</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Tanggal Bergabung</label>
                 <input
                   type="date"
                   value={newMember.joinDate || ""}
                   onChange={(e) => setNewMember({...newMember, joinDate: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Lokasi</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Lokasi</label>
                 <input
                   type="text"
                   value={newMember.location || ""}
                   onChange={(e) => setNewMember({...newMember, location: e.target.value})}
                   placeholder="Cikampek"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Status</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Status</label>
                 <select 
                   value={newMember.status || ""} 
                   onChange={(e) => setNewMember({...newMember, status: e.target.value as any})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                 >
                   <option value="active">Aktif</option>
                   <option value="inactive">Tidak Aktif</option>
@@ -520,10 +598,10 @@ export default function TeamPage() {
               </div>
             </div>
             
-            <div className="flex gap-2 mt-6">
+            <div className="flex flex-col sm:flex-row gap-2 mt-6">
               <button 
                 onClick={editingMember ? handleUpdateMember : handleAddMember}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors"
+                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors"
               >
                 {editingMember ? 'Update Anggota' : 'Tambah Anggota'}
               </button>
@@ -549,80 +627,180 @@ export default function TeamPage() {
           ) : (
             filteredMembers.map((member) => {
               const RoleIcon = getRoleIcon(member.role)
+              const isExpanded = expandedMember === member.id
+              
               return (
-                <div key={member.id} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-start gap-4">
-                    {/* Avatar */}
-                    <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-semibold text-lg">
-                        {member.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                      </span>
+                <div key={member.id} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
+                  {/* Mobile Layout */}
+                  <div className="lg:hidden">
+                    <div className="flex items-start gap-3">
+                      {/* Avatar */}
+                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-semibold text-sm">
+                          {member.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                        </span>
+                      </div>
+                      
+                      {/* Main Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">
+                              {member.name}
+                            </h3>
+                            <p className="text-sm text-gray-600">{member.position}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
+                                {member.employeeId}
+                              </span>
+                              <span className={`text-xs px-2 py-0.5 border rounded-full ${getRoleBadgeColor(member.role)} flex items-center gap-1`}>
+                                <RoleIcon className="w-3 h-3" />
+                                {getRoleLabel(member.role)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={() => setExpandedMember(isExpanded ? null : member.id)}
+                            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                          >
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+                        </div>
+
+                        {/* Quick Info */}
+                        <div className="mt-3 space-y-1 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-3 h-3 text-purple-500" />
+                            <span className="truncate">{member.department}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-3 h-3 text-blue-500" />
+                            <span className="truncate">{member.email}</span>
+                          </div>
+                        </div>
+
+                        {/* Expanded Details */}
+                        {isExpanded && (
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="grid grid-cols-1 gap-3 text-sm text-gray-600 mb-4">
+                              <div className="flex items-center gap-2">
+                                <Phone className="w-4 h-4 text-green-500" />
+                                {member.phone}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-red-500" />
+                                {member.location}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-indigo-500" />
+                                {formatDate(member.joinDate)}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs px-2 py-1 border rounded-full ${getStatusBadgeColor(member.status)}`}>
+                                  {member.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEditMember(member)}
+                                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                              >
+                                <Edit className="w-4 h-4" />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteMember(member.id)}
+                                className="flex-1 px-3 py-2 text-sm border border-red-300 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Hapus
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    
-                    {/* Main Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h3 className="text-xl font-semibold text-gray-900">
-                          {member.name}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs px-2 py-1 border rounded-full bg-gray-50 text-gray-700">
-                            {member.employeeId}
-                          </span>
-                          <span className={`text-xs px-2 py-1 border rounded-full ${getRoleBadgeColor(member.role)} flex items-center gap-1`}>
-                            <RoleIcon className="w-3 h-3" />
-                            {getRoleLabel(member.role)}
-                          </span>
-                          <span className={`text-xs px-2 py-1 border rounded-full ${getStatusBadgeColor(member.status)}`}>
-                            {member.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
-                          </span>
+                  </div>
+
+                  {/* Desktop Layout */}
+                  <div className="hidden lg:block">
+                    <div className="flex items-start gap-4">
+                      {/* Avatar */}
+                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-semibold text-lg">
+                          {member.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                        </span>
+                      </div>
+                      
+                      {/* Main Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          <h3 className="text-xl font-semibold text-gray-900">
+                            {member.name}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs px-2 py-1 border rounded-full bg-gray-50 text-gray-700">
+                              {member.employeeId}
+                            </span>
+                            <span className={`text-xs px-2 py-1 border rounded-full ${getRoleBadgeColor(member.role)} flex items-center gap-1`}>
+                              <RoleIcon className="w-3 h-3" />
+                              {getRoleLabel(member.role)}
+                            </span>
+                            <span className={`text-xs px-2 py-1 border rounded-full ${getStatusBadgeColor(member.status)}`}>
+                              {member.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-600 mb-4">
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-blue-500" />
+                            {member.email}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-green-500" />
+                            {member.phone}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4 text-purple-500" />
+                            {member.department}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-orange-500" />
+                            {member.position}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-red-500" />
+                            {member.location}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-indigo-500" />
+                            {formatDate(member.joinDate)}
+                          </div>
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-600 mb-4">
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-blue-500" />
-                          {member.email}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-green-500" />
-                          {member.phone}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-purple-500" />
-                          {member.department}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-orange-500" />
-                          {member.position}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-red-500" />
-                          {member.location}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-indigo-500" />
-                          {formatDate(member.joinDate)}
-                        </div>
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => handleEditMember(member)}
+                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMember(member.id)}
+                          className="px-3 py-1.5 text-sm border border-red-300 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Hapus
+                        </button>
                       </div>
-                    </div>
-                    
-                    {/* Actions */}
-                    <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => handleEditMember(member)}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
-                      >
-                        <Edit className="w-4 h-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteMember(member.id)}
-                        className="px-3 py-1.5 text-sm border border-red-300 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Hapus
-                      </button>
                     </div>
                   </div>
                 </div>

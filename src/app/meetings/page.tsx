@@ -14,7 +14,9 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal
+  MoreHorizontal,
+  Menu,
+  X
 } from 'lucide-react';
 
 // Type definitions
@@ -46,6 +48,7 @@ interface Reminder {
 export default function MeetingDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeView, setActiveView] = useState<ViewType>('Month');
+  const [showSidebar, setShowSidebar] = useState(false);
 
   // Sample meeting data matching the reference
   const meetings: Meeting[] = [
@@ -200,50 +203,69 @@ export default function MeetingDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-green-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-green-100">
+      {/* Mobile Header */}
+      <div className="lg:hidden sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 py-3 z-40">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-gray-900">Meetings</h1>
+          <button 
+            onClick={() => setShowSidebar(!showSidebar)}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            {showSidebar ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+      </div>
 
+      <div className="flex">
+        {/* Mobile Sidebar Overlay */}
+        {showSidebar && (
+          <div 
+            className="lg:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowSidebar(false)}
+          />
+        )}
 
-      <div className="flex gap-8">
         {/* Main Content */}
-        <div className="flex-1">
-          {/* Page Title */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Schedule Meetings</h1>
+        <div className="flex-1 p-4 sm:p-6">
+          {/* Desktop Title */}
+          <h1 className="hidden lg:block text-3xl font-bold text-gray-900 mb-8">Schedule Meetings</h1>
 
           {/* Statistics Cards */}
-          <div className="grid grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-green-600" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">36</div>
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900">36</div>
                   <div className="text-sm text-gray-600">Schedule meeting</div>
                   <div className="text-xs text-green-600">This month</div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-yellow-600" />
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">14</div>
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900">14</div>
                   <div className="text-sm text-gray-600">Rescheduled meeting</div>
                   <div className="text-xs text-yellow-600">This month</div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">20</div>
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900">20</div>
                   <div className="text-sm text-gray-600">Cancelled meeting</div>
                   <div className="text-xs text-red-600">This month</div>
                 </div>
@@ -253,23 +275,24 @@ export default function MeetingDashboard() {
 
           {/* Today's Meetings */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Today - 6 meeting</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Today - 6 meeting</h2>
             
-            <div className="grid grid-cols-3 gap-6 mb-6">
+            {/* Meetings Grid - Responsive */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mb-6">
               {meetings.slice(0, 3).map((meeting, index) => (
-                <div key={meeting.id} className="bg-white rounded-2xl p-6 shadow-sm">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-yellow-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">{meeting.avatar}</span>
+                <div key={meeting.id} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+                  <div className="flex items-start gap-3 sm:gap-4 mb-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-400 to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-semibold text-xs sm:text-sm">{meeting.avatar}</span>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1">{meeting.title}</h3>
-                      <p className="text-sm text-gray-500">{meeting.time}</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base truncate">{meeting.title}</h3>
+                      <p className="text-xs sm:text-sm text-gray-500">{meeting.time}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center justify-between mb-4">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs sm:text-sm text-gray-600">
                       <span className="font-medium">{meeting.membersGoing} Members Going</span>
                       {meeting.pending && (
                         <span className="text-orange-600 ml-2">{meeting.pending} Pending</span>
@@ -278,50 +301,50 @@ export default function MeetingDashboard() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex -space-x-2">
-                      {[...Array(Math.min(meeting.participants, 4))].map((_, i) => (
-                        <div key={i} className="w-8 h-8 bg-gradient-to-br from-green-400 to-yellow-500 rounded-full border-2 border-white flex items-center justify-center">
+                    <div className="flex -space-x-1 sm:-space-x-2">
+                      {[...Array(Math.min(meeting.participants, 3))].map((_, i) => (
+                        <div key={i} className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-green-400 to-yellow-500 rounded-full border-2 border-white flex items-center justify-center">
                           <span className="text-white text-xs font-semibold">
                             {String.fromCharCode(65 + i)}
                           </span>
                         </div>
                       ))}
-                      {meeting.participants > 4 && (
-                        <div className="w-8 h-8 bg-gray-300 rounded-full border-2 border-white flex items-center justify-center">
+                      {meeting.participants > 3 && (
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-300 rounded-full border-2 border-white flex items-center justify-center">
                           <span className="text-gray-600 text-xs font-semibold">
-                            +{meeting.participants - 4}
+                            +{meeting.participants - 3}
                           </span>
                         </div>
                       )}
                     </div>
                     
-                    <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    <button className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                       index === 1 
                         ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}>
-                      View Details
+                      View
                     </button>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
               {meetings.slice(3, 6).map((meeting, index) => (
-                <div key={meeting.id} className="bg-white rounded-2xl p-6 shadow-sm">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">{meeting.avatar}</span>
+                <div key={meeting.id} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+                  <div className="flex items-start gap-3 sm:gap-4 mb-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-semibold text-xs sm:text-sm">{meeting.avatar}</span>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1">{meeting.title}</h3>
-                      <p className="text-sm text-gray-500">{meeting.time}</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base truncate">{meeting.title}</h3>
+                      <p className="text-xs sm:text-sm text-gray-500">{meeting.time}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center justify-between mb-4">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs sm:text-sm text-gray-600">
                       <span className="font-medium">{meeting.membersGoing} Members Going</span>
                       {meeting.pending && (
                         <span className="text-orange-600 ml-2">{meeting.pending} Pending</span>
@@ -330,142 +353,159 @@ export default function MeetingDashboard() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex -space-x-2">
-                      {[...Array(Math.min(meeting.participants, 4))].map((_, i) => (
-                        <div key={i} className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                    <div className="flex -space-x-1 sm:-space-x-2">
+                      {[...Array(Math.min(meeting.participants, 3))].map((_, i) => (
+                        <div key={i} className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-yellow-400 to-green-500 rounded-full border-2 border-white flex items-center justify-center">
                           <span className="text-white text-xs font-semibold">
                             {String.fromCharCode(65 + i)}
                           </span>
                         </div>
                       ))}
-                      {meeting.participants > 4 && (
-                        <div className="w-8 h-8 bg-gray-300 rounded-full border-2 border-white flex items-center justify-center">
+                      {meeting.participants > 3 && (
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-300 rounded-full border-2 border-white flex items-center justify-center">
                           <span className="text-gray-600 text-xs font-semibold">
-                            +{meeting.participants - 4}
+                            +{meeting.participants - 3}
                           </span>
                         </div>
                       )}
                     </div>
                     
-                    <button className="bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                      View Details
+                    <button className="bg-gray-100 text-gray-700 hover:bg-gray-200 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors">
+                      View
                     </button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* Mobile Create Button */}
+          <div className="lg:hidden fixed bottom-6 right-6 z-20">
+            <button className="w-14 h-14 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors">
+              <Plus className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-80 flex flex-col h-fit max-h-screen overflow-hidden">
-          {/* Calendar */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm mb-6 flex-shrink-0">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-gray-900">Calendar</h2>
-              <div className="flex bg-gray-100 rounded-lg p-0.5">
-                {(['Week', 'Month', 'Year'] as ViewType[]).map((view) => (
-                  <button
-                    key={view}
-                    onClick={() => setActiveView(view)}
-                    className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                      activeView === view 
-                        ? 'bg-green-600 text-white' 
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    {view}
-                  </button>
+        <div className={`${showSidebar ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0 fixed lg:relative top-0 right-0 w-80 sm:w-96 lg:w-80 h-full bg-white lg:bg-transparent flex flex-col transition-transform duration-300 ease-in-out z-50 lg:z-auto shadow-xl lg:shadow-none`}>
+          <div className="p-4 sm:p-6 h-full flex flex-col lg:max-h-screen lg:overflow-hidden">
+            {/* Mobile sidebar header */}
+            <div className="lg:hidden flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Calendar & Reminders</h2>
+              <button onClick={() => setShowSidebar(false)}>
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Calendar */}
+            <div className="bg-white lg:shadow-sm rounded-2xl p-4 mb-6 flex-shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-gray-900">Calendar</h2>
+                <div className="flex bg-gray-100 rounded-lg p-0.5">
+                  {(['Week', 'Month', 'Year'] as ViewType[]).map((view) => (
+                    <button
+                      key={view}
+                      onClick={() => setActiveView(view)}
+                      className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                        activeView === view 
+                          ? 'bg-green-600 text-white' 
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {view}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mb-3">
+                <button 
+                  onClick={() => {
+                    const newDate = new Date(selectedDate);
+                    newDate.setMonth(newDate.getMonth() - 1);
+                    setSelectedDate(newDate);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-lg"
+                >
+                  <ChevronLeft className="w-4 h-4 text-gray-600" />
+                </button>
+                <h3 className="text-sm font-medium text-gray-900">
+                  {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </h3>
+                <button 
+                  onClick={() => {
+                    const newDate = new Date(selectedDate);
+                    newDate.setMonth(newDate.getMonth() + 1);
+                    setSelectedDate(newDate);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-lg"
+                >
+                  <ChevronRight className="w-4 h-4 text-gray-600" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                  <div key={day} className="text-center text-xs font-medium text-gray-500 py-1">
+                    {day}
+                  </div>
                 ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {generateCalendarDays().map((date, index) => {
+                  const isCurrentMonth = date.getMonth() === selectedDate.getMonth();
+                  const isToday = date.toDateString() === new Date().toDateString();
+                  const hasEvent = [5, 12, 18, 25].includes(date.getDate()) && isCurrentMonth;
+                  
+                  return (
+                    <button
+                      key={index}
+                      className={`p-1.5 text-xs relative transition-colors rounded-md ${
+                        isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                      } ${
+                        isToday 
+                          ? 'bg-green-600 text-white font-semibold' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {date.getDate()}
+                      {hasEvent && !isToday && (
+                        <div className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-green-500 rounded-full"></div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="flex items-center justify-between mb-3">
-              <button 
-                onClick={() => {
-                  const newDate = new Date(selectedDate);
-                  newDate.setMonth(newDate.getMonth() - 1);
-                  setSelectedDate(newDate);
-                }}
-                className="p-1 hover:bg-gray-100 rounded-lg"
-              >
-                <ChevronLeft className="w-4 h-4 text-gray-600" />
-              </button>
-              <h3 className="text-sm font-medium text-gray-900">
-                {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </h3>
-              <button 
-                onClick={() => {
-                  const newDate = new Date(selectedDate);
-                  newDate.setMonth(newDate.getMonth() + 1);
-                  setSelectedDate(newDate);
-                }}
-                className="p-1 hover:bg-gray-100 rounded-lg"
-              >
-                <ChevronRight className="w-4 h-4 text-gray-600" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                <div key={day} className="text-center text-xs font-medium text-gray-500 py-1">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-1">
-              {generateCalendarDays().map((date, index) => {
-                const isCurrentMonth = date.getMonth() === selectedDate.getMonth();
-                const isToday = date.toDateString() === new Date().toDateString();
-                const hasEvent = [5, 12, 18, 25].includes(date.getDate()) && isCurrentMonth;
-                
-                return (
-                  <button
-                    key={index}
-                    className={`p-1.5 text-xs relative transition-colors rounded-md ${
-                      isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                    } ${
-                      isToday 
-                        ? 'bg-green-600 text-white font-semibold' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    {date.getDate()}
-                    {hasEvent && !isToday && (
-                      <div className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-green-500 rounded-full"></div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Reminders */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
-              <h2 className="text-lg font-semibold text-gray-900">Reminders</h2>
-              <Bell className="w-5 h-5 text-gray-400" />
-            </div>
-            
-            <div className="space-y-4 flex-1 overflow-y-auto min-h-0 mb-6">
-              {reminders.map((reminder) => (
-                <div key={reminder.id} className={`p-4 rounded-xl border-l-4 ${getReminderColor(reminder.type)} flex-shrink-0`}>
-                  <div className="flex items-start gap-3">
-                    <span className="text-lg">{getReminderIcon(reminder.type)}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 mb-1">{reminder.message}</p>
-                      <p className="text-xs text-gray-500">{reminder.category}</p>
+            {/* Reminders */}
+            <div className="bg-white lg:shadow-sm rounded-2xl p-4 sm:p-6 flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center justify-between mb-4 sm:mb-6 flex-shrink-0">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Reminders</h2>
+                <Bell className="w-5 h-5 text-gray-400" />
+              </div>
+              
+              <div className="space-y-3 sm:space-y-4 flex-1 overflow-y-auto min-h-0 mb-4 sm:mb-6">
+                {reminders.map((reminder) => (
+                  <div key={reminder.id} className={`p-3 sm:p-4 rounded-xl border-l-4 ${getReminderColor(reminder.type)} flex-shrink-0`}>
+                    <div className="flex items-start gap-3">
+                      <span className="text-base sm:text-lg">{getReminderIcon(reminder.type)}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm font-medium text-gray-900 mb-1">{reminder.message}</p>
+                        <p className="text-xs text-gray-500">{reminder.category}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors flex-shrink-0">
-              <Plus className="w-5 h-5" />
-              Create Meeting
-            </button>
+              <button className="hidden lg:flex w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl items-center justify-center gap-2 transition-colors flex-shrink-0">
+                <Plus className="w-5 h-5" />
+                Create Meeting
+              </button>
+            </div>
           </div>
         </div>
       </div>
