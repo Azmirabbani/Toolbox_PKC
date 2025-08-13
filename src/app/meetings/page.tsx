@@ -78,34 +78,51 @@ const makeId = () =>
   (typeof crypto !== "undefined" && (crypto as any)?.randomUUID?.()) ||
   String(Date.now() + Math.random());
 
-const statusConfig = {
+const startOfRange = (s: string) => s?.split("-")[0]?.trim() ?? "";
+
+/* Status badge config + component */
+const statusConfig: Record<
+  MeetingStatus,
+  { text: string; tone: string; icon: React.ComponentType<any> }
+> = {
   completed: {
-    class: "bg-green-100 text-green-700 border border-green-200",
     text: "Selesai",
+    tone: "bg-green-100 text-green-700",
     icon: CheckCircle,
   },
   ongoing: {
-    class: "bg-yellow-100 text-yellow-700 border border-yellow-200",
     text: "Berlangsung",
+    tone: "bg-yellow-100 text-yellow-700",
     icon: PlayCircle,
   },
   scheduled: {
-    class: "bg-blue-100 text-blue-700 border border-blue-200",
     text: "Terjadwal",
+    tone: "bg-blue-100 text-blue-700",
     icon: Clock,
   },
 };
 
-// ===== Departments master data =====
+const StatusBadge = ({ status }: { status: MeetingStatus }) => {
+  const cfg = statusConfig[status];
+  const Icon = cfg.icon;
+  return (
+    <span
+      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${cfg.tone}`}
+    >
+      <Icon className="w-4 h-4" />
+      {cfg.text}
+    </span>
+  );
+};
+
+/* Departments master */
 const DEPARTMENTS: Record<string, string[]> = {
   "Teknologi Informasi": ["Azmi", "Abdul", "Rehan", "Radya"],
   "Pengadaan Jasa & Barang": ["Moses", "Krisna"],
   Keuangan: ["Nova", "Luna", "Rine"],
 };
 
-const startOfRange = (s: string) => s?.split("-")[0]?.trim() ?? "";
-
-/* Components */
+/* UI Primitives */
 const Modal = ({
   title,
   onClose,
@@ -242,6 +259,136 @@ const ParticipantCard = ({ participant }: { participant: Participant }) => (
   </div>
 );
 
+/* MeetingCard: responsive & action buttons wrap */
+const MeetingCard = ({
+  meeting,
+  onOpen,
+  onStart,
+  onEdit,
+  onNotulen,
+}: {
+  meeting: Meeting;
+  onOpen: () => void;
+  onStart: () => void;
+  onEdit: () => void;
+  onNotulen: () => void;
+}) => {
+  const done = meeting.agenda.filter((a) => a.completed).length;
+  const total = meeting.agenda.length || 1;
+  const pct = Math.round((done / total) * 100);
+  const hasFollowup = meeting.agenda.some((a) => a.needsFollowUp);
+
+  return (
+    <div
+      className="group relative p-4 sm:p-5 hover:bg-gradient-to-r from-green-50/60 to-yellow-50/40 transition"
+      onClick={onOpen}
+    >
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-1 rounded-r bg-gradient-to-b from-green-400 to-yellow-400 opacity-60" />
+
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 break-words">
+              {meeting.title}
+            </h3>
+            {hasFollowup && (
+              <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                Perlu follow-up
+              </span>
+            )}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {fmtDateID(meeting.date)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {meeting.time}
+            </span>
+            <span className="flex items-center gap-1">
+              <Users className="w-3 h-3 text-green-600" />
+              {meeting.participants.length} peserta
+            </span>
+          </div>
+
+          <div className="mt-3 w-full">
+            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-500 to-yellow-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="mt-1 text-[11px] text-gray-500">
+              {done}/{total} agenda selesai
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <div className="flex -space-x-2 items-center">
+              {meeting.participants.slice(0, 3).map((p) => (
+                <div
+                  key={String(p.id)}
+                  className="w-7 h-7 rounded-full bg-gradient-to-br from-green-500 to-yellow-500 text-white flex items-center justify-center text-[10px] font-semibold ring-2 ring-white"
+                  title={p.name}
+                >
+                  {p.avatar}
+                </div>
+              ))}
+              {meeting.participants.length > 3 && (
+                <div className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-[10px] font-semibold ring-2 ring-white">
+                  +{meeting.participants.length - 3}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:items-end gap-2">
+          <StatusBadge status={meeting.status} />
+
+          <div
+            className="flex flex-wrap items-center gap-2 md:opacity-0 md:translate-y-1 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {meeting.status === "scheduled" && (
+              <button
+                onClick={onStart}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600"
+              >
+                Mulai
+              </button>
+            )}
+            {meeting.status === "ongoing" && (
+              <button
+                onClick={onOpen}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600"
+              >
+                Lanjut
+              </button>
+            )}
+            {meeting.status === "completed" && (
+              <button
+                onClick={onNotulen}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700"
+              >
+                Notulensi
+              </button>
+            )}
+            <button
+              onClick={onEdit}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Edit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* Page */
 export default function MeetingsPage() {
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
@@ -254,7 +401,7 @@ export default function MeetingsPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
 
-  // Draft create
+  /* Create draft */
   type CreateDraft = {
     title: string;
     date: string;
@@ -281,6 +428,7 @@ export default function MeetingsPage() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
+  /* Seed */
   const [meetings, setMeetings] = useState<Meeting[]>([
     {
       id: 1,
@@ -341,8 +489,6 @@ export default function MeetingsPage() {
           completed: true,
         },
       ],
-      generalNotes:
-        "Meeting berjalan lancar, semua poin agenda dibahas tuntas kecuali issue mesin line 3 yang memerlukan tindak lanjut.",
       startTime: "10:30",
       endTime: "11:25",
     },
@@ -423,7 +569,7 @@ export default function MeetingsPage() {
     return { todayCount, upcoming, ongoing, completedNotes, followUps };
   }, [meetings, today]);
 
-  // Handlers
+  /* Handlers */
   const handleMeetingSelect = (meeting: Meeting) => {
     setSelectedMeeting(meeting);
     setCurrentView(
@@ -468,207 +614,128 @@ export default function MeetingsPage() {
     setCurrentView("completed");
   };
 
-  // helper
-  const updateAgendaItem = React.useCallback(
-    (agendaId: string | number, field: keyof AgendaItem, value: any) => {
-      setSelectedMeeting((prev) => {
-        if (!prev) return prev;
-        const agenda = prev.agenda.map((item) =>
-          item.id === agendaId ? { ...item, [field]: value } : item
-        );
-        return { ...prev, agenda };
-      });
-    },
-    []
-  );
-
-  // =================== Export PDF with jsPDF (auto-download, typed) ===================
-  const exportToPDF = async () => {
+  /* Export PDF (auto print) */
+  const exportToPDF = () => {
     if (!selectedMeeting) return;
-
-    // gunakan named import agar tipe ikut terbawa
-    const { jsPDF } = await import("jspdf");
-
-    const m = selectedMeeting;
-    const attended: Participant[] = (m.participants || []).filter(
+    const attendedParticipants = selectedMeeting.participants.filter(
       (p) => p.attended
     );
-    const completedAgenda: AgendaItem[] = (m.agenda || []).filter(
-      (a) => a.completed
-    );
-    const followUpAgenda: AgendaItem[] = (m.agenda || []).filter(
+    const completedAgenda = selectedMeeting.agenda.filter((a) => a.completed);
+    const followUpAgenda = selectedMeeting.agenda.filter(
       (a) => a.needsFollowUp
     );
 
-    const sanitize = (s: string): string =>
-      s
-        .replace(/[\\/:*?"<>|]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
+    const w = window.open("", "_blank");
+    if (!w) return;
 
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const M = 16;
-    const contentW = pageW - M * 2;
-    let y = 18;
+    w.document.write(`
+      <!DOCTYPE html><html><head><meta charset="UTF-8">
+        <title>Notulensi - ${selectedMeeting.title}</title>
+        <style>
+          @page { size: A4; margin: 2cm; }
+          body { font-family: Arial, sans-serif; color:#111; }
+          .hline { height:2px; background:#111; margin: 20px 0 10px; }
+          .title { font-size:26px; font-weight:800; letter-spacing:1px; text-align:center; margin-top:4px; }
+          .subtitle { text-align:center; color:#444; margin-top:6px; }
+          .section { margin: 24px 0 12px; }
+          .sec-hd { font-weight:800; font-size:18px; letter-spacing: .4px; border-bottom: 2px solid #111; padding-bottom:8px; display:flex; align-items:center; gap:8px;}
+          .bar { width:6px; height:20px; background:#111; display:inline-block; }
+          ul { margin:6px 0 0 22px; }
+          li { margin:3px 0; }
+          .agenda-item { margin:8px 0; }
+          .muted { color:#666; font-size:12px; text-align:center; margin-top:32px; }
+        </style>
+      </head>
+      <body>
+        <div class="title">NOTULENSI RAPAT</div>
+        <div class="subtitle">${selectedMeeting.title}</div>
+        <div class="subtitle">${fmtDateID(selectedMeeting.date)} | ${
+      selectedMeeting.startTime || selectedMeeting.time
+    } - ${selectedMeeting.endTime || "Belum selesai"}</div>
+        <div class="hline"></div>
 
-    const need = (h: number): void => {
-      if (y + h > pageH - M) {
-        doc.addPage();
-        y = M;
-      }
-    };
+        <div class="section">
+          <div class="sec-hd"><span class="bar"></span>PESERTA HADIR</div>
+          ${
+            attendedParticipants.length
+              ? `<ul>${attendedParticipants
+                  .map((p) => `<li>${p.name} (${p.department ?? "-"})</li>`)
+                  .join("")}</ul>`
+              : `<div>• Belum ada peserta yang hadir</div>`
+          }
+        </div>
 
-    const hr = (pad: number = 4): void => {
-      need(pad + 1);
-      y += pad;
-      doc.setDrawColor(20);
-      doc.setLineWidth(0.4);
-      doc.line(M, y, pageW - M, y);
-      y += 4;
-    };
+        <div class="section">
+          <div class="sec-hd"><span class="bar"></span>AGENDA YANG DIBAHAS</div>
+          ${
+            completedAgenda.length
+              ? completedAgenda
+                  .map(
+                    (a, i) =>
+                      `<div class="agenda-item"><div>${i + 1}. ${
+                        a.title
+                      }</div><div>Hasil: ${
+                        a.notes || "Tidak ada catatan khusus."
+                      }</div></div>`
+                  )
+                  .join("")
+              : `<div>Belum ada agenda yang diselesaikan</div>`
+          }
+        </div>
 
-    const H1 = (t: string): void => {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text(t, pageW / 2, y, { align: "center" as const });
-      y += 8;
-    };
+        ${
+          followUpAgenda.length
+            ? `<div class="section">
+                 <div class="sec-hd"><span class="bar"></span>TINDAK LANJUT</div>
+                 ${followUpAgenda
+                   .map(
+                     (a, i) =>
+                       `<div class="agenda-item"><div>${i + 1}. ${
+                         a.title
+                       }</div><div>Target: ${
+                         a.followUpDate ? fmtDateID(a.followUpDate) : "TBD"
+                       }</div><div>Catatan: ${
+                         a.notes || "Perlu pembahasan lebih lanjut"
+                       }</div></div>`
+                   )
+                   .join("")}
+               </div>`
+            : ""
+        }
 
-    const H2 = (t: string): void => {
-      need(10);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(13);
-      doc.setDrawColor(10);
-      doc.setLineWidth(1.6);
-      doc.line(M, y - 3, M, y + 5);
-      doc.text(t, M + 6, y);
-      y += 5;
-    };
+        ${
+          selectedMeeting.notes
+            ? `<div class="section">
+                 <div class="sec-hd"><span class="bar"></span>CATATAN UMUM & NOTULENSI</div>
+                 <div>${selectedMeeting.notes.replace(/\n/g, "<br/>")}</div>
+               </div>`
+            : ""
+        }
 
-    const P = (t: string, size: number = 11, leading: number = 5): void => {
-      if (!t?.trim()) return;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(size);
-      const lines = doc.splitTextToSize(t, contentW) as unknown as string[];
-      lines.forEach((ln: string): void => {
-        need(leading);
-        doc.text(ln, M, y);
-        y += leading;
-      });
-    };
+        <div class="muted">Dokumen ini dibuat otomatis pada ${new Date().toLocaleDateString(
+          "id-ID",
+          {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        )}</div>
 
-    const Bullet = (t: string): void => {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      const lines = doc.splitTextToSize(t, contentW - 6) as unknown as string[];
-      lines.forEach((ln: string, i: number): void => {
-        need(5);
-        if (i === 0) doc.text("•", M, y);
-        doc.text(ln, M + 6, y);
-        y += 5;
-      });
-    };
-
-    const Numbered = (n: number, t: string): void => {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      const label = `${n}. `;
-      const labelW = doc.getTextWidth(label);
-      const lines = doc.splitTextToSize(
-        t,
-        contentW - labelW
-      ) as unknown as string[];
-      lines.forEach((ln: string, i: number): void => {
-        need(5);
-        if (i === 0) doc.text(label, M, y);
-        doc.text(ln, M + labelW, y);
-        y += 5;
-      });
-    };
-
-    // Header
-    H1("NOTULENSI RAPAT");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.text(m.title, pageW / 2, y, { align: "center" as const });
-    y += 6;
-    doc.setFontSize(10);
-    doc.text(
-      `${fmtDateID(m.date)} | ${m.startTime || m.time} - ${
-        m.endTime || "Selesai"
-      }`,
-      pageW / 2,
-      y,
-      { align: "center" as const }
-    );
-    hr(8);
-
-    // Peserta
-    H2("PESERTA HADIR");
-    if (attended.length === 0) {
-      Bullet("Belum ada peserta yang hadir");
-    } else {
-      attended.forEach((p: Participant): void =>
-        Bullet(`${p.name} (${p.department ?? "-"})`)
-      );
-    }
-    hr();
-
-    // Agenda yang dibahas
-    H2("AGENDA YANG DIBAHAS");
-    if (completedAgenda.length === 0) {
-      P("Belum ada agenda yang diselesaikan.");
-    } else {
-      completedAgenda.forEach((a: AgendaItem, i: number): void => {
-        Numbered(i + 1, a.title);
-        P(`Hasil: ${a.notes || "-"}`);
-        y += 2;
-      });
-    }
-    hr();
-
-    // Follow-up
-    if (followUpAgenda.length > 0) {
-      H2("TINDAK LANJUT");
-      followUpAgenda.forEach((a: AgendaItem, i: number): void => {
-        const target = a.followUpDate ? fmtDateID(a.followUpDate) : "TBD";
-        Numbered(
-          i + 1,
-          `${a.title} • Target: ${target} • Catatan: ${a.notes || "-"}`
-        );
-        y += 2;
-      });
-      hr();
-    }
-
-    // Notulensi
-    H2("CATATAN UMUM & NOTULENSI");
-    P(m.notes || "-", 11, 5);
-
-    // Footer
-    const madeAt = new Date().toLocaleDateString("id-ID", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const footerY = Math.max(y + 6, pageH - 16);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(120);
-    doc.text(`Dokumen ini dibuat otomatis pada ${madeAt}`, pageW / 2, footerY, {
-      align: "center" as const,
-    });
-
-    const filename = `Notulensi_${sanitize(m.title)}_${m.date}.pdf`;
-    doc.save(filename);
+        <script>
+          window.addEventListener('load', function(){
+            window.print();
+            setTimeout(function(){ window.close(); }, 300);
+          });
+        </script>
+      </body></html>
+    `);
+    w.document.close();
+    w.focus();
   };
-  // =====================================================================
 
-  // Form Components
+  /* Form primitives */
   const FormInput = ({
     type,
     value,
@@ -686,7 +753,7 @@ export default function MeetingsPage() {
     />
   );
 
-  // ==================== Participant Row-based Form ====================
+  /* Participant selector (rows) */
   type ParticipantRow = { id: string; department: string; name: string };
 
   function ParticipantSelectRow({
@@ -807,7 +874,6 @@ export default function MeetingsPage() {
       </section>
     );
   }
-  // ================== end Participant Row-based Form ==================
 
   const AgendaForm = ({ agenda, onUpdate, onAdd, onRemove }: any) => (
     <section>
@@ -852,8 +918,8 @@ export default function MeetingsPage() {
     </section>
   );
 
-  // Row -> Participant[]
-  function rowsToParticipants(rows: any[]): Participant[] {
+  // Row <-> participants
+  function rowsToParticipants(rows: ParticipantRow[]): Participant[] {
     return rows
       .filter((r) => r.department && r.name)
       .map((r) => ({
@@ -863,9 +929,7 @@ export default function MeetingsPage() {
         avatar: initials(r.name),
       }));
   }
-
-  // Participant[] -> Row (untuk initial edit)
-  function participantsToRows(parts: Participant[]): any[] {
+  function participantsToRows(parts: Participant[]): ParticipantRow[] {
     return (parts || []).map((p) => {
       let dep = p.department || "";
       if (!dep) {
@@ -892,20 +956,18 @@ export default function MeetingsPage() {
       }: any) {
         const m = meeting as any;
 
-        // ===== Participants (row-based) =====
-        const [rows, setRows] = React.useState<any[]>(
+        const [rows, setRows] = React.useState<ParticipantRow[]>(
           participantsToRows(m.participants || [])
         );
 
         React.useEffect(() => {
           setRows(participantsToRows(m.participants || []));
-        }, []); // mounted per open
+        }, []);
 
         const handleRowsChange = React.useCallback(
-          (next: any[]) => {
+          (next: ParticipantRow[]) => {
             setRows(next);
             const participants = rowsToParticipants(next);
-
             if (isCreate) {
               setNewMeeting((prev) => ({ ...prev, participants }));
             } else {
@@ -1029,7 +1091,7 @@ export default function MeetingsPage() {
                 onChange={(e: any) => handlers.title(e.target.value)}
                 placeholder="Judul meeting"
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormInput
                   type="date"
                   value={m.date || ""}
@@ -1041,7 +1103,7 @@ export default function MeetingsPage() {
                     type="time"
                     value={start}
                     onChange={(e) => updateStart(e.target.value)}
-                    className="relative z-[9999] w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                     style={{ color: "#111827" }}
                   />
                 </div>
@@ -1088,9 +1150,10 @@ export default function MeetingsPage() {
     []
   );
 
-  // View Components
+  /* Views */
   const ListView = () => (
     <>
+      {/* stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-6 mb-6 lg:mb-8">
         <StatCard
           icon={<Calendar className="w-6 h-6" />}
@@ -1133,66 +1196,56 @@ export default function MeetingsPage() {
         />
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-green-100">
-        <div className="p-6 border-b border-green-100">
+      {/* daftar meeting */}
+      <div className="bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between p-5 border-b border-green-100">
           <h2 className="text-lg font-semibold text-gray-900">
             Daftar Meeting
           </h2>
-        </div>
-        <div className="divide-y divide-green-50">
-          {meetings.map((m) => {
-            const config = statusConfig[m.status];
-            const IconComponent = config.icon;
-            return (
-              <button
-                key={m.id}
-                onClick={() => handleMeetingSelect(m)}
-                className="w-full text-left p-4 hover:bg-green-50 transition-colors"
+
+          <div className="mt-3 md:mt-0 w-full md:w-auto">
+            <div className="relative">
+              <input
+                placeholder="Cari judul meeting..."
+                className="w-full md:w-72 pl-10 pr-3 py-2.5 rounded-xl border border-green-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder:text-gray-400"
+              />
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-medium text-gray-900 text-sm leading-tight">
-                    {m.title}
-                  </h3>
-                  <span
-                    className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${config.class}`}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    {config.text}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-4 text-xs text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {fmtDateID(m.date)}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {m.time}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-3 h-3 text-green-600" />
-                    <span className="text-xs text-gray-600">
-                      {m.participants.length} peserta
-                    </span>
-                    {m.status === "completed" &&
-                      m.agenda.some((a) => a.needsFollowUp) && (
-                        <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
-                          Perlu Follow-up
-                        </span>
-                      )}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="divide-y divide-green-50">
+          {meetings.map((m) => (
+            <MeetingCard
+              key={m.id}
+              meeting={m}
+              onOpen={() => handleMeetingSelect(m)}
+              onStart={() => handleStartMeeting(m)}
+              onEdit={() => {
+                setEditingMeeting(m);
+                setShowEditForm(true);
+              }}
+              onNotulen={() => {
+                setSelectedMeeting(m);
+                setCurrentView("completed");
+              }}
+            />
+          ))}
         </div>
       </div>
     </>
   );
 
-  // ====== OngoingView: stabil fokus + debounced autosave ======
+  /* Ongoing: debounced inputs */
   const OngoingView = () => {
     if (!selectedMeeting) return null;
 
@@ -1220,10 +1273,7 @@ export default function MeetingsPage() {
 
     const handleMeetingNotesChange = (v: string) => {
       setMeetingNotes(v);
-      if (meetingAutosaveRef.current) {
-        clearTimeout(meetingAutosaveRef.current);
-        meetingAutosaveRef.current = null;
-      }
+      if (meetingAutosaveRef.current) clearTimeout(meetingAutosaveRef.current);
       meetingAutosaveRef.current = setTimeout(() => {
         updateMeeting((m) => ({ ...m, notes: v }));
         meetingAutosaveRef.current = null;
@@ -1253,10 +1303,7 @@ export default function MeetingsPage() {
 
       const handleNotesChange = (value: string) => {
         setLocalNotes(value);
-        if (debounceRef.current) {
-          clearTimeout(debounceRef.current);
-          debounceRef.current = null;
-        }
+        if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
           updateMeeting((m) => ({
             ...m,
@@ -1410,14 +1457,40 @@ export default function MeetingsPage() {
             placeholder="Tulis notulensi lengkap meeting di sini..."
             className="w-full h-32 p-4 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder-gray-500"
           />
+          <p className="text-xs text-gray-500 mt-2">
+            Perubahan disimpan otomatis.
+          </p>
         </div>
       </div>
     );
   };
 
-  // ===== CompletedView: EDIT NOTULENSI + export PDF =====
+  /* Completed (Notulensi: view + toggle edit + autosave) */
   const CompletedView = () => {
     if (!selectedMeeting) return null;
+
+    const [editingNotes, setEditingNotes] = useState(false);
+    const [localNotes, setLocalNotes] = useState(selectedMeeting.notes || "");
+    const saveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+      setLocalNotes(selectedMeeting.notes || "");
+      setEditingNotes(false);
+    }, [selectedMeeting.id]);
+
+    const saveNotesDebounced = (next: string) => {
+      setLocalNotes(next);
+      if (saveRef.current) clearTimeout(saveRef.current);
+      saveRef.current = setTimeout(() => {
+        const updated = { ...selectedMeeting, notes: next };
+        setSelectedMeeting(updated);
+        setMeetings((prev) =>
+          prev.map((m) => (m.id === updated.id ? updated : m))
+        );
+        saveRef.current = null;
+      }, 600);
+    };
+
     const attendedParticipants = selectedMeeting.participants.filter(
       (p) => p.attended
     );
@@ -1425,44 +1498,6 @@ export default function MeetingsPage() {
     const followUpAgenda = selectedMeeting.agenda.filter(
       (a) => a.needsFollowUp
     );
-
-    const updateMeeting = React.useCallback(
-      (updater: (m: Meeting) => Meeting) => {
-        const updated = updater(selectedMeeting);
-        setSelectedMeeting(updated);
-        setMeetings((prev) =>
-          prev.map((m) => (m.id === updated.id ? updated : m))
-        );
-      },
-      [selectedMeeting]
-    );
-
-    const [notesEdit, setNotesEdit] = React.useState(
-      selectedMeeting.notes || ""
-    );
-    const saveRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    React.useEffect(() => {
-      setNotesEdit(selectedMeeting.notes || "");
-    }, [selectedMeeting.id]);
-
-    const handleNotesInput = (v: string) => {
-      setNotesEdit(v);
-      if (saveRef.current) {
-        clearTimeout(saveRef.current);
-        saveRef.current = null;
-      }
-      saveRef.current = setTimeout(() => {
-        updateMeeting((m) => ({ ...m, notes: v }));
-        saveRef.current = null;
-      }, 800);
-    };
-
-    React.useEffect(() => {
-      return () => {
-        if (saveRef.current) clearTimeout(saveRef.current);
-      };
-    }, []);
 
     return (
       <div className="space-y-6">
@@ -1472,7 +1507,7 @@ export default function MeetingsPage() {
               <h2 className="text-xl font-semibold text-gray-900">
                 {selectedMeeting.title}
               </h2>
-              <div className="flex items-center gap-4 text-gray-600 mt-2">
+              <div className="flex flex-wrap items-center gap-4 text-gray-600 mt-2">
                 <span>{fmtDateID(selectedMeeting.date)}</span>
                 <span>
                   {selectedMeeting.startTime} - {selectedMeeting.endTime}
@@ -1482,23 +1517,19 @@ export default function MeetingsPage() {
                 </span>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
-                onClick={() => {
-                  setEditingMeeting(selectedMeeting);
-                  setShowEditForm(true);
-                }}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-medium flex items-center gap-2"
+                onClick={() => setEditingNotes((v) => !v)}
+                className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl font-medium"
               >
-                <Edit3 className="w-4 h-4" />
-                Edit Meeting
+                {editingNotes ? "Selesai Edit Notulensi" : "Edit Notulensi"}
               </button>
               <button
                 onClick={exportToPDF}
-                className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium flex items-center gap-2"
+                className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
-                Unduh PDF
+                Export PDF
               </button>
             </div>
           </div>
@@ -1565,20 +1596,30 @@ export default function MeetingsPage() {
           </div>
         )}
 
-        {/* Editable Notulensi */}
+        {/* Notulensi: view or edit */}
         <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Notulensi Meeting (Edit)
+            {editingNotes ? "Notulensi Meeting (Edit)" : "Notulensi Meeting"}
           </h3>
-          <textarea
-            value={notesEdit}
-            onChange={(e) => handleNotesInput(e.target.value)}
-            placeholder="Tulis/ubah notulensi lengkap meeting di sini..."
-            className="w-full h-32 p-4 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder-gray-500"
-          />
-          <p className="text-xs text-gray-500 mt-2">
-            Perubahan disimpan otomatis.
-          </p>
+          {editingNotes ? (
+            <>
+              <textarea
+                value={localNotes}
+                onChange={(e) => saveNotesDebounced(e.target.value)}
+                placeholder="Tulis notulensi lengkap meeting di sini..."
+                className="w-full h-40 p-4 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder-gray-500"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Perubahan disimpan otomatis.
+              </p>
+            </>
+          ) : (
+            <div className="bg-gray-50 p-4 rounded-xl">
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {selectedMeeting.notes || "Belum ada notulensi."}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1593,7 +1634,7 @@ export default function MeetingsPage() {
             Pilih Meeting
           </h3>
           <p className="text-gray-600 text-base">
-            Pilih meeting dari daftar untuk melihat detail dan notulensi
+            Pilih meeting dari daftar untuk melihat detail
           </p>
         </div>
       );
@@ -1609,36 +1650,36 @@ export default function MeetingsPage() {
               <h2 className="text-xl font-semibold text-gray-900">
                 {selectedMeeting.title}
               </h2>
-              <div className="flex items-center gap-4 text-gray-600 mt-2">
+              <div className="flex items-center gap-4 text-gray-600 mt-2 flex-wrap">
                 <span>{fmtDateID(selectedMeeting.date)}</span>
                 <span>{selectedMeeting.time}</span>
                 <span
-                  className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${config.class}`}
+                  className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${config.tone}`}
                 >
                   <IconComponent className="w-4 h-4" />
                   {config.text}
                 </span>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               {selectedMeeting.status === "scheduled" && (
                 <>
                   <button
                     onClick={() => handleStartMeeting(selectedMeeting)}
-                    className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-xl font-medium flex items-center gap-2"
+                    className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-xl font-medium flex items-center gap-2"
                   >
                     <PlayCircle className="w-4 h-4" />
-                    Mulai Meeting
+                    Mulai
                   </button>
                   <button
                     onClick={() => {
                       setEditingMeeting(selectedMeeting);
                       setShowEditForm(true);
                     }}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-medium flex items-center gap-2"
+                    className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-medium flex items-center gap-2"
                   >
                     <Edit3 className="w-4 h-4" />
-                    Edit Meeting
+                    Edit
                   </button>
                 </>
               )}
@@ -1649,17 +1690,17 @@ export default function MeetingsPage() {
                       setEditingMeeting(selectedMeeting);
                       setShowEditForm(true);
                     }}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-medium flex items-center gap-2"
+                    className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-medium flex items-center gap-2"
                   >
                     <Edit3 className="w-4 h-4" />
-                    Edit Meeting
+                    Edit
                   </button>
                   <button
                     onClick={() => setCurrentView("completed")}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium flex items-center gap-2"
+                    className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium flex items-center gap-2"
                   >
                     <Eye className="w-4 h-4" />
-                    Lihat / Edit Notulensi
+                    Notulensi
                   </button>
                 </>
               )}
@@ -1734,24 +1775,22 @@ export default function MeetingsPage() {
                 key={`${item.id}-${index}`}
                 className="border-l-4 border-yellow-500 pl-4 py-3 bg-yellow-50 rounded-r-lg"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{item.title}</h4>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Dari meeting: {item.meetingTitle} (
-                      {fmtDateID(item.meetingDate)})
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">{item.title}</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Dari meeting: {item.meetingTitle} (
+                    {fmtDateID(item.meetingDate)})
+                  </p>
+                  {item.notes && (
+                    <p className="text-sm text-gray-700 mt-2 bg-white p-2 rounded">
+                      {item.notes}
                     </p>
-                    {item.notes && (
-                      <p className="text-sm text-gray-700 mt-2 bg-white p-2 rounded">
-                        {item.notes}
-                      </p>
-                    )}
-                    {item.followUpDate && (
-                      <p className="text-sm text-yellow-700 font-medium mt-2">
-                        Target: {fmtDateID(item.followUpDate)}
-                      </p>
-                    )}
-                  </div>
+                  )}
+                  {item.followUpDate && (
+                    <p className="text-sm text-yellow-700 font-medium mt-2">
+                      Target: {fmtDateID(item.followUpDate)}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -1778,7 +1817,7 @@ export default function MeetingsPage() {
     return <DetailView />;
   };
 
-  // Create / Edit
+  /* Create / Edit handlers */
   const handleCreateMeeting = () => {
     if (!newMeeting.title || !newMeeting.date || !newMeeting.time) return;
 
@@ -1834,7 +1873,7 @@ export default function MeetingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-green-100">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-green-50 via-yellow-50 to-green-100 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {isMobile && (
         <div className="bg-white border-b border-green-200 px-4 py-4">
           <div className="flex items-center justify-between">
