@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
+
 // Type definitions
 type TaskStatus = 'pending' | 'in-progress' | 'completed' | 'overdue';
 type TaskPriority = 'urgent' | 'high' | 'medium' | 'low';
@@ -51,73 +52,73 @@ export default function TasksPage() {
 
   // State untuk menyimpan tasks
   const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: 1,
-      title: 'Safety Protocol Review',
-      description: 'Review and update safety protocols for production line A',
-      status: 'in-progress',
-      priority: 'high',
-      dueDate: '2024-08-01',
-      assignee: 'John Doe',
-      progress: 75,
-      category: 'Safety'
-    },
-    {
-      id: 2,
-      title: 'Quality Control Inspection',
-      description: 'Monthly quality control inspection for all production units',
-      status: 'completed',
-      priority: 'medium',
-      dueDate: '2024-07-28',
-      assignee: 'Jane Smith',
-      progress: 100,
-      category: 'Quality'
-    },
-    {
-      id: 3,
-      title: 'Production Report',
-      description: 'Generate monthly production report and analysis',
-      status: 'pending',
-      priority: 'urgent',
-      dueDate: '2024-07-31',
-      assignee: 'Mike Johnson',
-      progress: 50,
-      category: 'Reporting'
-    },
-    {
-      id: 4,
-      title: 'Equipment Maintenance',
-      description: 'Scheduled maintenance for production equipment',
-      status: 'in-progress',
-      priority: 'medium',
-      dueDate: '2024-08-05',
-      assignee: 'Sarah Wilson',
-      progress: 30,
-      category: 'Maintenance'
-    },
-    {
-      id: 5,
-      title: 'Training Session Planning',
-      description: 'Plan and organize safety training session for new employees',
-      status: 'pending',
-      priority: 'low',
-      dueDate: '2024-08-10',
-      assignee: 'David Brown',
-      progress: 0,
-      category: 'Training'
-    },
-    {
-      id: 6,
-      title: 'Inventory Audit',
-      description: 'Complete inventory audit for raw materials',
-      status: 'overdue',
-      priority: 'high',
-      dueDate: '2024-07-25',
-      assignee: 'Lisa Davis',
-      progress: 80,
-      category: 'Inventory'
-    }
-  ]);
+  {
+    id: 1,
+    title: 'Rapat Evaluasi Kinerja',
+    description: 'Melaksanakan rapat evaluasi kinerja bulanan seluruh divisi administrasi',
+    status: 'in-progress',
+    priority: 'high',
+    dueDate: '2024-08-01',
+    assignee: 'Budi Santoso',
+    progress: 75,
+    category: 'Administrasi'
+  },
+  {
+    id: 2,
+    title: 'Audit Internal Dokumen Keuangan',
+    description: 'Pemeriksaan dokumen keuangan dan operasional sesuai SOP',
+    status: 'completed',
+    priority: 'medium',
+    dueDate: '2024-07-28',
+    assignee: 'Rina Wijaya',
+    progress: 100,
+    category: 'Audit'
+  },
+  {
+    id: 3,
+    title: 'Laporan Produksi Bulanan',
+    description: 'Menyusun laporan produksi dari pabrik untuk manajemen pusat',
+    status: 'pending',
+    priority: 'urgent',
+    dueDate: '2024-07-31',
+    assignee: 'Andi Pratama',
+    progress: 50,
+    category: 'Pelaporan'
+  },
+  {
+    id: 4,
+    title: 'Pemeliharaan Sistem IT',
+    description: 'Pemeliharaan server, jaringan, dan perangkat komputer gedung admin',
+    status: 'in-progress',
+    priority: 'medium',
+    dueDate: '2024-08-05',
+    assignee: 'Siti Lestari',
+    progress: 30,
+    category: 'IT'
+  },
+  {
+    id: 5,
+    title: 'Persiapan Pelatihan Karyawan Baru',
+    description: 'Membuat materi dan jadwal pelatihan untuk pegawai baru',
+    status: 'pending',
+    priority: 'low',
+    dueDate: '2024-08-10',
+    assignee: 'Fajar Nugraha',
+    progress: 0,
+    category: 'Pelatihan'
+  },
+  {
+    id: 6,
+    title: 'Stock Opname Arsip',
+    description: 'Pendataan ulang arsip dokumen perusahaan di ruang arsip',
+    status: 'overdue',
+    priority: 'high',
+    dueDate: '2024-07-25',
+    assignee: 'Maya Putri',
+    progress: 80,
+    category: 'Arsip'
+  }
+]);
 
   // Status columns configuration
   const statusColumns = [

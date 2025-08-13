@@ -12,16 +12,45 @@ import {
   ArrowRightOnRectangleIcon,
   UserIcon,
   Cog6ToothIcon,
-  XMarkIcon
+  XMarkIcon,
+  ClockIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { useSidebar } from '@/context/SidebarContext';
 import Image from 'next/image';
+
+// Data statis task pending
+const pendingTasks = [
+  {
+    id: 3,
+    title: 'Laporan Produksi Bulanan',
+    description: 'Menyusun laporan produksi dari pabrik untuk manajemen pusat',
+    status: 'pending',
+    priority: 'urgent',
+    dueDate: '2024-07-31',
+    assignee: 'Andi Pratama',
+    progress: 50,
+    category: 'Pelaporan'
+  },
+  {
+    id: 5,
+    title: 'Persiapan Pelatihan Karyawan Baru',
+    description: 'Membuat materi dan jadwal pelatihan untuk pegawai baru',
+    status: 'pending',
+    priority: 'low',
+    dueDate: '2024-08-10',
+    assignee: 'Fajar Nugraha',
+    progress: 0,
+    category: 'Pelatihan'
+  }
+];
 
 export const Header = () => {
   const { toggleSidebar } = useSidebar();
   const router = useRouter();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   const handleLogout = () => {
     // Hapus token dari cookies
@@ -36,6 +65,12 @@ export const Header = () => {
 
   const toggleProfileDropdown = () => {
     setIsProfileDropdownOpen(!isProfileDropdownOpen);
+    setIsNotificationOpen(false); // Close notification when profile opens
+  };
+
+  const toggleNotification = () => {
+    setIsNotificationOpen(!isNotificationOpen);
+    setIsProfileDropdownOpen(false); // Close profile when notification opens
   };
 
   const handlePhotoClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -46,6 +81,37 @@ export const Header = () => {
 
   const closePhotoModal = () => {
     setIsPhotoModalOpen(false);
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent':
+        return 'text-red-600 bg-red-50';
+      case 'high':
+        return 'text-orange-600 bg-orange-50';
+      case 'medium':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'low':
+        return 'text-blue-600 bg-blue-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const getPriorityIcon = (priority: string) => {
+    if (priority === 'urgent') {
+      return <ExclamationTriangleIcon className="w-4 h-4" />;
+    }
+    return <ClockIcon className="w-4 h-4" />;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
   };
 
   return (
@@ -83,12 +149,88 @@ export const Header = () => {
               </button>
               
               {/* Notifications */}
-              <button className="relative p-2.5 rounded-xl hover:bg-[#e6f7ef]/60 text-gray-600 hover:text-[#009a44] transition-all duration-200 group">
-                <BellIcon className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FFD500] text-gray-900 text-xs rounded-full flex items-center justify-center animate-bounce font-medium">
-                  5
-                </span>
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={toggleNotification}
+                  className="relative p-2.5 rounded-xl hover:bg-[#e6f7ef]/60 text-gray-600 hover:text-[#009a44] transition-all duration-200 group"
+                >
+                  <BellIcon className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  {pendingTasks.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FFD500] text-gray-900 text-xs rounded-full flex items-center justify-center animate-bounce font-medium">
+                      {pendingTasks.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown */}
+                {isNotificationOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 py-2 z-50 max-h-96 overflow-y-auto">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-900">Task Pending</h3>
+                        <span className="text-xs bg-[#FFD500] text-gray-900 px-2 py-1 rounded-full font-medium">
+                          {pendingTasks.length}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {pendingTasks.length > 0 ? (
+                      <div className="py-1">
+                        {pendingTasks.map((task) => (
+                          <div key={task.id} className="px-4 py-3 hover:bg-[#e6f7ef]/30 border-b border-gray-50 last:border-b-0 cursor-pointer transition-colors">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="text-sm font-medium text-gray-900 truncate">
+                                    {task.title}
+                                  </h4>
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                                    {getPriorityIcon(task.priority)}
+                                    {task.priority}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                                  {task.description}
+                                </p>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-500">
+                                    Due: {formatDate(task.dueDate)}
+                                  </span>
+                                  <span className="text-[#009a44] font-medium">
+                                    {task.progress}% Complete
+                                  </span>
+                                </div>
+                                <div className="mt-1 text-xs text-gray-500">
+                                  Assignee: {task.assignee}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        <div className="px-4 py-3 border-t border-gray-100">
+                          <button 
+                            onClick={() => {
+                              setIsNotificationOpen(false);
+                              router.push('/dashboard/tasks');
+                            }}
+                            className="w-full text-center text-sm text-[#009a44] hover:text-[#007d37] font-medium transition-colors"
+                          >
+                            Lihat Semua Task
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="px-4 py-8 text-center">
+                        <div className="text-gray-400 mb-2">
+                          <BellIcon className="w-8 h-8 mx-auto" />
+                        </div>
+                        <p className="text-sm text-gray-500">Tidak ada task pending</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Divider */}
               <div className="w-px h-6 bg-gray-300 mx-2"></div>
@@ -157,11 +299,14 @@ export const Header = () => {
           </div>
         </div>
 
-        {/* Overlay to close dropdown when clicking outside */}
-        {isProfileDropdownOpen && (
+        {/* Overlay to close dropdowns when clicking outside */}
+        {(isProfileDropdownOpen || isNotificationOpen) && (
           <div 
             className="fixed inset-0 z-30" 
-            onClick={() => setIsProfileDropdownOpen(false)}
+            onClick={() => {
+              setIsProfileDropdownOpen(false);
+              setIsNotificationOpen(false);
+            }}
           ></div>
         )}
       </header>

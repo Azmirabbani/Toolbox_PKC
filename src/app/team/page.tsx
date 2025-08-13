@@ -279,18 +279,18 @@ export default function TeamPage() {
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'leader':
-        return 'bg-green-100 text-green-800 border-green-200'
+        return 'bg-green-100 text-green-800 border-green-300'
       case 'coordinator':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return 'bg-gray-100 text-gray-800 border-gray-300'
     }
   }
 
   const getStatusBadgeColor = (status: string) => {
     return status === 'active' 
-      ? 'bg-green-100 text-green-800 border-green-200'
-      : 'bg-gray-100 text-gray-800 border-gray-200'
+      ? 'bg-green-100 text-green-800 border-green-300'
+      : 'bg-gray-100 text-gray-700 border-gray-300'
   }
 
   const filteredMembers = getFilteredMembers()
@@ -299,111 +299,135 @@ export default function TeamPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-green-100">
-      {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 py-3 z-40">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center">
-              <Users className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">Tim Management</h1>
-              <p className="text-xs text-gray-600">{activeMembers} anggota aktif</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => setShowAddForm(true)}
-            className="p-2 bg-green-600 text-white rounded-lg"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Desktop Header */}
-      <div className="hidden lg:block bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-6 py-6">
+      {/* Header - Static position, tidak mengikuti scroll */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        {/* Mobile Header */}
+        <div className="lg:hidden px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-white" />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Tim Management</h1>
-                <p className="text-gray-600">Kelola anggota tim dan struktur organisasi</p>
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold text-gray-900">Tim Management</h1>
+                <p className="text-sm text-gray-600">{activeMembers} anggota aktif • {leaders} leader</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full flex items-center gap-1 text-sm">
-                  <Users className="w-4 h-4" />
-                  {activeMembers} Aktif
+            <button 
+              onClick={() => setShowAddForm(true)}
+              className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors shadow-sm flex-shrink-0"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden lg:block">
+          <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-white" />
                 </div>
-                <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full flex items-center gap-1 text-sm">
-                  <Shield className="w-4 h-4" />
-                  {leaders} Leader
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Tim Management</h1>
+                  <p className="text-gray-700">Kelola anggota tim dan struktur organisasi</p>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowAddForm(true)}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Tambah Anggota
-              </button>
+              <div className="flex items-center gap-4">
+                <div className="flex gap-2">
+                  <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full flex items-center gap-1 text-sm font-medium">
+                    <Users className="w-4 h-4" />
+                    {activeMembers} Aktif
+                  </div>
+                  <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full flex items-center gap-1 text-sm font-medium">
+                    <Shield className="w-4 h-4" />
+                    {leaders} Leader
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowAddForm(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Tambah Anggota
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        {/* Mobile Search & Filter Toggle */}
-        <div className="lg:hidden mb-4">
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        {/* Mobile Search & Filter Toggle - Fixed responsive design */}
+        <div className="lg:hidden mb-4 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
               placeholder="Cari anggota tim..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900"
             />
           </div>
           
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 flex items-center justify-between text-gray-700"
+            className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 flex items-center justify-between text-gray-800 hover:bg-gray-50 transition-colors shadow-sm"
           >
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              <span>Filter ({filteredMembers.length}/{teamMembers.length})</span>
+            <div className="flex items-center gap-3">
+              <Filter className="w-5 h-5 text-gray-600" />
+              <span className="font-medium">Filter & Urutkan</span>
+              <span className="text-sm text-gray-500">({filteredMembers.length}/{teamMembers.length})</span>
             </div>
-            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-5 h-5 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
           </button>
           
           {showFilters && (
-            <div className="bg-white border border-gray-300 rounded-lg mt-2 p-4 space-y-3">
-              <select 
-                value={departmentFilter} 
-                onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="all">Semua Departemen</option>
-                {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </select>
+            <div className="bg-white border border-gray-300 rounded-xl p-4 space-y-4 shadow-sm">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Departemen</label>
+                <select 
+                  value={departmentFilter} 
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
+                >
+                  <option value="all">Semua Departemen</option>
+                  {departments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
 
-              <select 
-                value={roleFilter} 
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="all">Semua Role</option>
-                {roles.map(role => (
-                  <option key={role.value} value={role.value}>{role.label}</option>
-                ))}
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                <select 
+                  value={roleFilter} 
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
+                >
+                  <option value="all">Semua Role</option>
+                  {roles.map(role => (
+                    <option key={role.value} value={role.value}>{role.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {(departmentFilter !== "all" || roleFilter !== "all" || searchQuery) && (
+                <button
+                  onClick={() => {
+                    setDepartmentFilter("all")
+                    setRoleFilter("all")
+                    setSearchQuery("")
+                  }}
+                  className="w-full py-2 text-center text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Reset Filter
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -418,14 +442,14 @@ export default function TeamPage() {
                 placeholder="Cari nama, ID, email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
               />
             </div>
 
             <select 
               value={departmentFilter} 
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
             >
               <option value="all">Semua Departemen</option>
               {departments.map(dept => (
@@ -436,7 +460,7 @@ export default function TeamPage() {
             <select 
               value={roleFilter} 
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
             >
               <option value="all">Semua Role</option>
               {roles.map(role => (
@@ -444,7 +468,7 @@ export default function TeamPage() {
               ))}
             </select>
 
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
               <Filter className="w-4 h-4" />
               {filteredMembers.length} dari {teamMembers.length} anggota
             </div>
@@ -483,7 +507,7 @@ export default function TeamPage() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Nama Lengkap *</label>
+                <label className="block text-sm font-medium mb-2 text-gray-800">Nama Lengkap *</label>
                 <input
                   type="text"
                   value={newMember.name || ""}
@@ -494,7 +518,7 @@ export default function TeamPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Team ID *</label>
+                <label className="block text-sm font-medium mb-2 text-gray-800">Team ID *</label>
                 <input
                   type="text"
                   value={newMember.employeeId || ""}
@@ -505,7 +529,7 @@ export default function TeamPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Email *</label>
+                <label className="block text-sm font-medium mb-2 text-gray-800">Email *</label>
                 <input
                   type="email"
                   value={newMember.email || ""}
@@ -516,7 +540,7 @@ export default function TeamPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">No. Telepon</label>
+                <label className="block text-sm font-medium mb-2 text-gray-800">No. Telepon</label>
                 <input
                   type="text"
                   value={newMember.phone || ""}
@@ -527,7 +551,7 @@ export default function TeamPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Departemen</label>
+                <label className="block text-sm font-medium mb-2 text-gray-800">Departemen</label>
                 <select 
                   value={newMember.department || ""} 
                   onChange={(e) => setNewMember({...newMember, department: e.target.value})}
@@ -541,7 +565,7 @@ export default function TeamPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Role Tim</label>
+                <label className="block text-sm font-medium mb-2 text-gray-800">Role Tim</label>
                 <select 
                   value={newMember.role || ""} 
                   onChange={(e) => setNewMember({...newMember, role: e.target.value as any})}
@@ -554,7 +578,7 @@ export default function TeamPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Posisi</label>
+                <label className="block text-sm font-medium mb-2 text-gray-800">Posisi</label>
                 <input
                   type="text"
                   value={newMember.position || ""}
@@ -565,7 +589,7 @@ export default function TeamPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Tanggal Bergabung</label>
+                <label className="block text-sm font-medium mb-2 text-gray-800">Tanggal Bergabung</label>
                 <input
                   type="date"
                   value={newMember.joinDate || ""}
@@ -575,7 +599,7 @@ export default function TeamPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Lokasi</label>
+                <label className="block text-sm font-medium mb-2 text-gray-800">Lokasi</label>
                 <input
                   type="text"
                   value={newMember.location || ""}
@@ -586,7 +610,7 @@ export default function TeamPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Status</label>
+                <label className="block text-sm font-medium mb-2 text-gray-800">Status</label>
                 <select 
                   value={newMember.status || ""} 
                   onChange={(e) => setNewMember({...newMember, status: e.target.value as any})}
@@ -601,7 +625,7 @@ export default function TeamPage() {
             <div className="flex flex-col sm:flex-row gap-2 mt-6">
               <button 
                 onClick={editingMember ? handleUpdateMember : handleAddMember}
-                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors"
+                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
               >
                 {editingMember ? 'Update Anggota' : 'Tambah Anggota'}
               </button>
@@ -610,14 +634,14 @@ export default function TeamPage() {
         )}
 
         {/* Team Members List */}
-        <div className="grid gap-4">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           {filteredMembers.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+            <div className="p-8 text-center">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 Tidak ada data anggota tim
               </h3>
-              <p className="text-gray-500">
+              <p className="text-gray-600">
                 {searchQuery || departmentFilter !== "all" || roleFilter !== "all"
                   ? "Coba ubah filter pencarian" 
                   : "Belum ada data anggota tim yang ditambahkan"
@@ -625,187 +649,200 @@ export default function TeamPage() {
               </p>
             </div>
           ) : (
-            filteredMembers.map((member) => {
-              const RoleIcon = getRoleIcon(member.role)
-              const isExpanded = expandedMember === member.id
-              
-              return (
-                <div key={member.id} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
-                  {/* Mobile Layout */}
-                  <div className="lg:hidden">
-                    <div className="flex items-start gap-3">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-semibold text-sm">
-                          {member.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                        </span>
-                      </div>
-                      
-                      {/* Main Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900 truncate">
-                              {member.name}
-                            </h3>
-                            <p className="text-sm text-gray-600">{member.position}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
-                                {member.employeeId}
-                              </span>
-                              <span className={`text-xs px-2 py-0.5 border rounded-full ${getRoleBadgeColor(member.role)} flex items-center gap-1`}>
-                                <RoleIcon className="w-3 h-3" />
-                                {getRoleLabel(member.role)}
+            <>
+              {/* Table Header - Desktop Only */}
+              <div className="hidden lg:block">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                    <div className="col-span-3">Anggota</div>
+                    <div className="col-span-2">Departemen</div>
+                    <div className="col-span-2">Role</div>
+                    <div className="col-span-2">Status</div>
+                    <div className="col-span-2">Kontak</div>
+                    <div className="col-span-1 text-center">Aksi</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table Body */}
+              <div className="divide-y divide-gray-200">
+                {filteredMembers.map((member) => {
+                  const RoleIcon = getRoleIcon(member.role)
+                  const isExpanded = expandedMember === member.id
+                  
+                  return (
+                    <div key={member.id} className="hover:bg-gray-50 transition-colors">
+                      {/* Mobile Layout - Fixed responsive design */}
+                      <div className="lg:hidden p-4">
+                        <div className="space-y-4">
+                          {/* Header with Avatar and Actions */}
+                          <div className="flex items-start gap-3">
+                            {/* Avatar */}
+                            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                              <span className="text-white font-bold text-sm">
+                                {member.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                               </span>
                             </div>
-                          </div>
-                          
-                          <button
-                            onClick={() => setExpandedMember(isExpanded ? null : member.id)}
-                            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                          >
-                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-                        </div>
-
-                        {/* Quick Info */}
-                        <div className="mt-3 space-y-1 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="w-3 h-3 text-purple-500" />
-                            <span className="truncate">{member.department}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-3 h-3 text-blue-500" />
-                            <span className="truncate">{member.email}</span>
-                          </div>
-                        </div>
-
-                        {/* Expanded Details */}
-                        {isExpanded && (
-                          <div className="mt-4 pt-4 border-t border-gray-200">
-                            <div className="grid grid-cols-1 gap-3 text-sm text-gray-600 mb-4">
-                              <div className="flex items-center gap-2">
-                                <Phone className="w-4 h-4 text-green-500" />
-                                {member.phone}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-red-500" />
-                                {member.location}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-indigo-500" />
-                                {formatDate(member.joinDate)}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className={`text-xs px-2 py-1 border rounded-full ${getStatusBadgeColor(member.status)}`}>
-                                  {member.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
-                                </span>
-                              </div>
+                            
+                            {/* Name and Title */}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-bold text-gray-900 mb-1">
+                                {member.name}
+                              </h3>
+                              <p className="text-sm font-medium text-gray-700 mb-1">{member.position}</p>
+                              <p className="text-xs text-gray-500">{member.employeeId}</p>
                             </div>
                             
                             {/* Action Buttons */}
-                            <div className="flex gap-2">
+                            <div className="flex gap-1 flex-shrink-0">
                               <button
                                 onClick={() => handleEditMember(member)}
-                                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                                className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                title="Edit"
                               >
                                 <Edit className="w-4 h-4" />
-                                Edit
                               </button>
                               <button
                                 onClick={() => handleDeleteMember(member.id)}
-                                className="flex-1 px-3 py-2 text-sm border border-red-300 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                title="Hapus"
                               >
                                 <Trash2 className="w-4 h-4" />
-                                Hapus
                               </button>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Desktop Layout */}
-                  <div className="hidden lg:block">
-                    <div className="flex items-start gap-4">
-                      {/* Avatar */}
-                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-semibold text-lg">
-                          {member.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                        </span>
-                      </div>
-                      
-                      {/* Main Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2 flex-wrap">
-                          <h3 className="text-xl font-semibold text-gray-900">
-                            {member.name}
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs px-2 py-1 border rounded-full bg-gray-50 text-gray-700">
-                              {member.employeeId}
-                            </span>
-                            <span className={`text-xs px-2 py-1 border rounded-full ${getRoleBadgeColor(member.role)} flex items-center gap-1`}>
-                              <RoleIcon className="w-3 h-3" />
+                          
+                          {/* Department and Role Badges */}
+                          <div className="flex flex-wrap gap-2">
+                            <div className="flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full border border-purple-200">
+                              <Building2 className="w-3.5 h-3.5" />
+                              <span className="text-sm font-medium">{member.department}</span>
+                            </div>
+                            <span className={`text-sm px-3 py-1.5 border rounded-full ${getRoleBadgeColor(member.role)} flex items-center gap-1.5 font-medium`}>
+                              <RoleIcon className="w-3.5 h-3.5" />
                               {getRoleLabel(member.role)}
                             </span>
-                            <span className={`text-xs px-2 py-1 border rounded-full ${getStatusBadgeColor(member.status)}`}>
+                            <span className={`text-sm px-3 py-1.5 border rounded-full ${getStatusBadgeColor(member.status)} font-medium`}>
                               {member.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
                             </span>
                           </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-600 mb-4">
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-blue-500" />
-                            {member.email}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4 text-green-500" />
-                            {member.phone}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-purple-500" />
-                            {member.department}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-orange-500" />
-                            {member.position}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-red-500" />
-                            {member.location}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-indigo-500" />
-                            {formatDate(member.joinDate)}
+                          
+                          {/* Contact Information */}
+                          <div className="grid grid-cols-1 gap-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                              <span className="text-gray-700 font-medium break-all">{member.email}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-4 h-4 text-green-500 flex-shrink-0" />
+                              <span className="text-gray-700 font-medium">{member.phone}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                              <span className="text-gray-600">{member.location}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                              <span className="text-gray-600">Bergabung {formatDate(member.joinDate)}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      
-                      {/* Actions */}
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => handleEditMember(member)}
-                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
-                        >
-                          <Edit className="w-4 h-4" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteMember(member.id)}
-                          className="px-3 py-1.5 text-sm border border-red-300 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Hapus
-                        </button>
+
+                      {/* Desktop Layout */}
+                      <div className="hidden lg:block px-6 py-4">
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          {/* Member Info */}
+                          <div className="col-span-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-white font-semibold text-sm">
+                                  {member.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                                </span>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-gray-900 truncate">{member.name}</p>
+                                <p className="text-sm text-gray-600 truncate">{member.position}</p>
+                                <p className="text-xs text-gray-500">{member.employeeId}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Department */}
+                          <div className="col-span-2">
+                            <div className="flex items-center gap-2">
+                              <Building2 className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{member.department}</p>
+                                <p className="text-xs text-gray-500 flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  {member.location}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Role */}
+                          <div className="col-span-2">
+                            <span className={`inline-flex items-center gap-1 px-3 py-1 text-sm font-medium border rounded-full ${getRoleBadgeColor(member.role)}`}>
+                              <RoleIcon className="w-3 h-3" />
+                              {getRoleLabel(member.role)}
+                            </span>
+                          </div>
+
+                          {/* Status */}
+                          <div className="col-span-2">
+                            <div>
+                              <span className={`inline-flex items-center px-3 py-1 text-sm font-medium border rounded-full ${getStatusBadgeColor(member.status)}`}>
+                                {member.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                              </span>
+                              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(member.joinDate)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Contact */}
+                          <div className="col-span-2">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1 text-sm text-gray-700">
+                                <Mail className="w-3 h-3 text-blue-500" />
+                                <span className="truncate font-medium">{member.email}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-sm text-gray-700">
+                                <Phone className="w-3 h-3 text-green-500" />
+                                <span className="font-medium">{member.phone}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="col-span-1">
+                            <div className="flex justify-center gap-1">
+                              <button
+                                onClick={() => handleEditMember(member)}
+                                className="p-1.5 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteMember(member.id)}
+                                className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                title="Hapus"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              )
-            })
+                  )
+                })}
+              </div>
+            </>
           )}
         </div>
       </div>
