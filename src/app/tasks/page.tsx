@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { 
+import {
   Plus,
   Filter,
   Search,
@@ -14,14 +14,13 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
-  X
-} from 'lucide-react';
-import { useState } from 'react';
-
+  X,
+} from "lucide-react";
+import { useState } from "react";
 
 // Type definitions
-type TaskStatus = 'pending' | 'in-progress' | 'completed' | 'overdue';
-type TaskPriority = 'urgent' | 'high' | 'medium' | 'low';
+type TaskStatus = "pending" | "in-progress" | "completed" | "overdue";
+type TaskPriority = "urgent" | "high" | "medium" | "low";
 
 interface Task {
   id: number;
@@ -36,165 +35,168 @@ interface Task {
 }
 
 export default function TasksPage() {
-  const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [showNewTaskModal, setShowNewTaskModal] = useState<boolean>(false);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState<Partial<Task>>({
-    title: '',
-    description: '',
-    status: 'pending',
-    priority: 'medium',
-    dueDate: '',
-    assignee: '',
-    category: ''
+    title: "",
+    description: "",
+    status: "pending",
+    priority: "medium",
+    dueDate: "",
+    assignee: "",
+    category: "",
   });
 
   // State untuk menyimpan tasks
   const [tasks, setTasks] = useState<Task[]>([
-  {
-    id: 1,
-    title: 'Rapat Evaluasi Kinerja',
-    description: 'Melaksanakan rapat evaluasi kinerja bulanan seluruh divisi administrasi',
-    status: 'in-progress',
-    priority: 'high',
-    dueDate: '2024-08-01',
-    assignee: 'Budi Santoso',
-    progress: 75,
-    category: 'Administrasi'
-  },
-  {
-    id: 2,
-    title: 'Audit Internal Dokumen Keuangan',
-    description: 'Pemeriksaan dokumen keuangan dan operasional sesuai SOP',
-    status: 'completed',
-    priority: 'medium',
-    dueDate: '2024-07-28',
-    assignee: 'Rina Wijaya',
-    progress: 100,
-    category: 'Audit'
-  },
-  {
-    id: 3,
-    title: 'Laporan Produksi Bulanan',
-    description: 'Menyusun laporan produksi dari pabrik untuk manajemen pusat',
-    status: 'pending',
-    priority: 'urgent',
-    dueDate: '2024-07-31',
-    assignee: 'Andi Pratama',
-    progress: 50,
-    category: 'Pelaporan'
-  },
-  {
-    id: 4,
-    title: 'Pemeliharaan Sistem IT',
-    description: 'Pemeliharaan server, jaringan, dan perangkat komputer gedung admin',
-    status: 'in-progress',
-    priority: 'medium',
-    dueDate: '2024-08-05',
-    assignee: 'Siti Lestari',
-    progress: 30,
-    category: 'IT'
-  },
-  {
-    id: 5,
-    title: 'Persiapan Pelatihan Karyawan Baru',
-    description: 'Membuat materi dan jadwal pelatihan untuk pegawai baru',
-    status: 'pending',
-    priority: 'low',
-    dueDate: '2024-08-10',
-    assignee: 'Fajar Nugraha',
-    progress: 0,
-    category: 'Pelatihan'
-  },
-  {
-    id: 6,
-    title: 'Stock Opname Arsip',
-    description: 'Pendataan ulang arsip dokumen perusahaan di ruang arsip',
-    status: 'overdue',
-    priority: 'high',
-    dueDate: '2024-07-25',
-    assignee: 'Maya Putri',
-    progress: 80,
-    category: 'Arsip'
-  }
-]);
+    {
+      id: 1,
+      title: "Rapat Evaluasi Kinerja",
+      description:
+        "Melaksanakan rapat evaluasi kinerja bulanan seluruh divisi administrasi",
+      status: "in-progress",
+      priority: "high",
+      dueDate: "2024-08-01",
+      assignee: "Budi Santoso",
+      progress: 75,
+      category: "Administrasi",
+    },
+    {
+      id: 2,
+      title: "Audit Internal Dokumen Keuangan",
+      description: "Pemeriksaan dokumen keuangan dan operasional sesuai SOP",
+      status: "completed",
+      priority: "medium",
+      dueDate: "2024-07-28",
+      assignee: "Rina Wijaya",
+      progress: 100,
+      category: "Audit",
+    },
+    {
+      id: 3,
+      title: "Laporan Produksi Bulanan",
+      description:
+        "Menyusun laporan produksi dari pabrik untuk manajemen pusat",
+      status: "pending",
+      priority: "urgent",
+      dueDate: "2024-07-31",
+      assignee: "Andi Pratama",
+      progress: 50,
+      category: "Pelaporan",
+    },
+    {
+      id: 4,
+      title: "Pemeliharaan Sistem IT",
+      description:
+        "Pemeliharaan server, jaringan, dan perangkat komputer gedung admin",
+      status: "in-progress",
+      priority: "medium",
+      dueDate: "2024-08-05",
+      assignee: "Siti Lestari",
+      progress: 30,
+      category: "IT",
+    },
+    {
+      id: 5,
+      title: "Persiapan Pelatihan Karyawan Baru",
+      description: "Membuat materi dan jadwal pelatihan untuk pegawai baru",
+      status: "pending",
+      priority: "low",
+      dueDate: "2024-08-10",
+      assignee: "Fajar Nugraha",
+      progress: 0,
+      category: "Pelatihan",
+    },
+    {
+      id: 6,
+      title: "Stock Opname Arsip",
+      description: "Pendataan ulang arsip dokumen perusahaan di ruang arsip",
+      status: "overdue",
+      priority: "high",
+      dueDate: "2024-07-25",
+      assignee: "Maya Putri",
+      progress: 80,
+      category: "Arsip",
+    },
+  ]);
 
   // Status columns configuration
   const statusColumns = [
     {
-      id: 'pending' as TaskStatus,
-      title: 'Pending',
+      id: "pending" as TaskStatus,
+      title: "Pending",
       icon: AlertCircle,
-      color: 'bg-yellow-100 text-yellow-800',
-      bgColor: 'bg-yellow-50',
-      borderColor: 'border-yellow-200'
+      color: "bg-yellow-100 text-yellow-800",
+      bgColor: "bg-yellow-50",
+      borderColor: "border-yellow-200",
     },
     {
-      id: 'in-progress' as TaskStatus,
-      title: 'In Progress',
+      id: "in-progress" as TaskStatus,
+      title: "In Progress",
       icon: Clock,
-      color: 'bg-blue-100 text-blue-800',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200'
+      color: "bg-blue-100 text-blue-800",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
     },
     {
-      id: 'completed' as TaskStatus,
-      title: 'Completed',
+      id: "completed" as TaskStatus,
+      title: "Completed",
       icon: CheckCircle,
-      color: 'bg-green-100 text-green-800',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200'
+      color: "bg-green-100 text-green-800",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
     },
     {
-      id: 'overdue' as TaskStatus,
-      title: 'Overdue',
+      id: "overdue" as TaskStatus,
+      title: "Overdue",
       icon: XCircle,
-      color: 'bg-red-100 text-red-800',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200'
-    }
+      color: "bg-red-100 text-red-800",
+      bgColor: "bg-red-50",
+      borderColor: "border-red-200",
+    },
   ];
 
   // Helper function untuk format tanggal yang konsisten
   const formatDate = (dateString: string) => {
-    if (!dateString) return '';
+    if (!dateString) return "";
     const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   };
 
   const getStatusColor = (status: TaskStatus): string => {
-    const column = statusColumns.find(col => col.id === status);
-    return column?.color || 'bg-gray-100 text-gray-800';
+    const column = statusColumns.find((col) => col.id === status);
+    return column?.color || "bg-gray-100 text-gray-800";
   };
 
   const getPriorityColor = (priority: TaskPriority): string => {
     switch (priority) {
-      case 'urgent':
-        return 'text-red-600';
-      case 'high':
-        return 'text-orange-600';
-      case 'medium':
-        return 'text-green-600';
-      case 'low':
-        return 'text-gray-600';
+      case "urgent":
+        return "text-red-600";
+      case "high":
+        return "text-orange-600";
+      case "medium":
+        return "text-green-600";
+      case "low":
+        return "text-gray-600";
       default:
-        return 'text-gray-600';
+        return "text-gray-600";
     }
   };
 
   const getStatusIcon = (status: TaskStatus) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'in-progress':
+      case "in-progress":
         return <Clock className="w-4 h-4 text-blue-600" />;
-      case 'pending':
+      case "pending":
         return <AlertCircle className="w-4 h-4 text-yellow-600" />;
-      case 'overdue':
+      case "overdue":
         return <XCircle className="w-4 h-4 text-red-600" />;
       default:
         return <Clock className="w-4 h-4 text-gray-600" />;
@@ -203,9 +205,9 @@ export default function TasksPage() {
 
   // Drag and Drop handlers
   const handleDragStart = (e: React.DragEvent, task: Task) => {
-    e.dataTransfer.setData('text/plain', task.id.toString());
-    e.dataTransfer.effectAllowed = 'move';
-    
+    e.dataTransfer.setData("text/plain", task.id.toString());
+    e.dataTransfer.effectAllowed = "move";
+
     requestAnimationFrame(() => {
       setDraggedTask(task);
     });
@@ -217,85 +219,85 @@ export default function TasksPage() {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
   };
 
   const handleDrop = (e: React.DragEvent, newStatus: TaskStatus) => {
     e.preventDefault();
-    
-    const draggedTaskId = e.dataTransfer.getData('text/plain');
+
+    const draggedTaskId = e.dataTransfer.getData("text/plain");
     const taskId = parseInt(draggedTaskId);
-    
+
     if (taskId) {
-      const draggedTaskData = tasks.find(task => task.id === taskId);
-      
+      const draggedTaskData = tasks.find((task) => task.id === taskId);
+
       if (draggedTaskData && draggedTaskData.status !== newStatus) {
-        setTasks(prevTasks =>
-          prevTasks.map(task =>
-            task.id === taskId
-              ? { ...task, status: newStatus }
-              : task
+        setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            task.id === taskId ? { ...task, status: newStatus } : task
           )
         );
       }
     }
-    
+
     setDraggedTask(null);
   };
 
   const filteredTasks = tasks.filter((task: Task) => {
-    const matchesFilter = activeFilter === 'all' || task.status === activeFilter;
-    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter =
+      activeFilter === "all" || task.status === activeFilter;
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   const handleCreateTask = () => {
     if (!newTask.title || !newTask.dueDate || !newTask.assignee) {
-      alert('Please fill in all required fields (Title, Due Date, Assignee)');
+      alert("Please fill in all required fields (Title, Due Date, Assignee)");
       return;
     }
 
-    const newId = Math.max(...tasks.map(t => t.id), 0) + 1;
-    
+    const newId = Math.max(...tasks.map((t) => t.id), 0) + 1;
+
     const taskToAdd: Task = {
       id: newId,
-      title: newTask.title || '',
-      description: newTask.description || '',
-      status: newTask.status as TaskStatus || 'pending',
-      priority: newTask.priority as TaskPriority || 'medium',
-      dueDate: newTask.dueDate || '',
-      assignee: newTask.assignee || '',
+      title: newTask.title || "",
+      description: newTask.description || "",
+      status: (newTask.status as TaskStatus) || "pending",
+      priority: (newTask.priority as TaskPriority) || "medium",
+      dueDate: newTask.dueDate || "",
+      assignee: newTask.assignee || "",
       progress: 0,
-      category: newTask.category || ''
+      category: newTask.category || "",
     };
 
-    setTasks(prevTasks => [...prevTasks, taskToAdd]);
-    
+    setTasks((prevTasks) => [...prevTasks, taskToAdd]);
+
     setNewTask({
-      title: '',
-      description: '',
-      status: 'pending',
-      priority: 'medium',
-      dueDate: '',
-      assignee: '',
-      category: ''
+      title: "",
+      description: "",
+      status: "pending",
+      priority: "medium",
+      dueDate: "",
+      assignee: "",
+      category: "",
     });
     setShowNewTaskModal(false);
-    
-    alert('Task created successfully!');
+
+    alert("Task created successfully!");
   };
 
   const handleInputChange = (field: keyof Task, value: any) => {
-    setNewTask(prev => ({
+    setNewTask((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleDeleteTask = (taskId: number) => {
-    if (confirm('Are you sure you want to delete this task?')) {
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+    if (confirm("Are you sure you want to delete this task?")) {
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
     }
   };
 
@@ -306,11 +308,14 @@ export default function TasksPage() {
       onDragStart={(e) => handleDragStart(e, task)}
       onDragEnd={handleDragEnd}
       className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow duration-150 cursor-move select-none ${
-        draggedTask?.id === task.id ? 'opacity-60 transform rotate-1 scale-95' : 'hover:scale-[1.02]'
+        draggedTask?.id === task.id
+          ? "opacity-60 transform rotate-1 scale-95"
+          : "hover:scale-[1.02]"
       }`}
       style={{
-        transform: draggedTask?.id === task.id ? 'rotate(2deg) scale(0.98)' : undefined,
-        transition: draggedTask?.id === task.id ? 'none' : 'all 0.15s ease'
+        transform:
+          draggedTask?.id === task.id ? "rotate(2deg) scale(0.98)" : undefined,
+        transition: draggedTask?.id === task.id ? "none" : "all 0.15s ease",
       }}
     >
       {/* Card Header */}
@@ -318,8 +323,14 @@ export default function TasksPage() {
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             {getStatusIcon(task.status)}
-            <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(task.status)}`}>
-              {task.status.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            <span
+              className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(
+                task.status
+              )}`}
+            >
+              {task.status
+                .replace("-", " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase())}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -355,7 +366,7 @@ export default function TasksPage() {
             <button className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-green-600 transition-colors">
               <Edit className="w-3 h-3" />
             </button>
-            <button 
+            <button
               onClick={() => handleDeleteTask(task.id)}
               className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-red-600 transition-colors"
             >
@@ -363,7 +374,7 @@ export default function TasksPage() {
             </button>
           </div>
         </div>
-        
+
         {/* Category Tag */}
         <div>
           <span className="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded border">
@@ -385,11 +396,15 @@ export default function TasksPage() {
                 <Flag className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Tasks Management</h1>
-                <p className="text-gray-600">Manage and track all your tasks efficiently</p>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Tasks Management
+                </h1>
+                <p className="text-gray-600">
+                  Manage and track all your tasks efficiently
+                </p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setShowNewTaskModal(true)}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
             >
@@ -417,19 +432,35 @@ export default function TasksPage() {
             {/* Filter Buttons */}
             <div className="flex gap-2 flex-wrap">
               {[
-                { key: 'all', label: 'All', count: tasks.length },
-                { key: 'pending', label: 'Pending', count: tasks.filter(t => t.status === 'pending').length },
-                { key: 'in-progress', label: 'In Progress', count: tasks.filter(t => t.status === 'in-progress').length },
-                { key: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed').length },
-                { key: 'overdue', label: 'Overdue', count: tasks.filter(t => t.status === 'overdue').length }
+                { key: "all", label: "All", count: tasks.length },
+                {
+                  key: "pending",
+                  label: "Pending",
+                  count: tasks.filter((t) => t.status === "pending").length,
+                },
+                {
+                  key: "in-progress",
+                  label: "In Progress",
+                  count: tasks.filter((t) => t.status === "in-progress").length,
+                },
+                {
+                  key: "completed",
+                  label: "Completed",
+                  count: tasks.filter((t) => t.status === "completed").length,
+                },
+                {
+                  key: "overdue",
+                  label: "Overdue",
+                  count: tasks.filter((t) => t.status === "overdue").length,
+                },
               ].map((filter) => (
                 <button
                   key={filter.key}
                   onClick={() => setActiveFilter(filter.key)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     activeFilter === filter.key
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
                   {filter.label} ({filter.count})
@@ -442,21 +473,31 @@ export default function TasksPage() {
         {/* Kanban Board View */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statusColumns.map((column) => {
-            const columnTasks = activeFilter === 'all' 
-              ? tasks.filter(task => task.status === column.id && 
-                  (task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                   task.description.toLowerCase().includes(searchQuery.toLowerCase())))
-              : filteredTasks.filter(task => task.status === column.id);
+            const columnTasks =
+              activeFilter === "all"
+                ? tasks.filter(
+                    (task) =>
+                      task.status === column.id &&
+                      (task.title
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                        task.description
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()))
+                  )
+                : filteredTasks.filter((task) => task.status === column.id);
 
             const IconComponent = column.icon;
 
             return (
               <div
                 key={column.id}
-                className={`${column.bgColor} ${column.borderColor} border-2 rounded-2xl p-4 min-h-[600px] transition-colors duration-200 ${
-                  draggedTask && draggedTask.status !== column.id 
-                    ? 'border-solid border-green-400 bg-green-50' 
-                    : 'border-dashed'
+                className={`${column.bgColor} ${
+                  column.borderColor
+                } border-2 rounded-2xl p-4 min-h-[600px] transition-colors duration-200 ${
+                  draggedTask && draggedTask.status !== column.id
+                    ? "border-solid border-green-400 bg-green-50"
+                    : "border-dashed"
                 }`}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, column.id)}
@@ -464,7 +505,9 @@ export default function TasksPage() {
                 {/* Column Header */}
                 <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
                   <IconComponent className="w-5 h-5 text-gray-600" />
-                  <h3 className="font-semibold text-gray-900">{column.title}</h3>
+                  <h3 className="font-semibold text-gray-900">
+                    {column.title}
+                  </h3>
                   <span className="ml-auto bg-white px-2 py-1 rounded-full text-xs font-medium text-gray-600">
                     {columnTasks.length}
                   </span>
@@ -497,8 +540,10 @@ export default function TasksPage() {
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Create New Task</h2>
-                <button 
+                <h2 className="text-xl font-bold text-gray-900">
+                  Create New Task
+                </h2>
+                <button
                   onClick={() => setShowNewTaskModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
@@ -515,8 +560,8 @@ export default function TasksPage() {
                   </label>
                   <input
                     type="text"
-                    value={newTask.title || ''}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    value={newTask.title || ""}
+                    onChange={(e) => handleInputChange("title", e.target.value)}
                     placeholder="Enter task title..."
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 placeholder-gray-400"
                   />
@@ -528,8 +573,10 @@ export default function TasksPage() {
                     Description
                   </label>
                   <textarea
-                    value={newTask.description || ''}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    value={newTask.description || ""}
+                    onChange={(e) =>
+                      handleInputChange("description", e.target.value)
+                    }
                     placeholder="Enter task description..."
                     rows={4}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none text-gray-900 placeholder-gray-400"
@@ -543,8 +590,13 @@ export default function TasksPage() {
                       Status
                     </label>
                     <select
-                      value={newTask.status || 'pending'}
-                      onChange={(e) => handleInputChange('status', e.target.value as TaskStatus)}
+                      value={newTask.status || "pending"}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "status",
+                          e.target.value as TaskStatus
+                        )
+                      }
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                     >
                       <option value="pending">Pending</option>
@@ -558,8 +610,13 @@ export default function TasksPage() {
                       Priority
                     </label>
                     <select
-                      value={newTask.priority || 'medium'}
-                      onChange={(e) => handleInputChange('priority', e.target.value as TaskPriority)}
+                      value={newTask.priority || "medium"}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "priority",
+                          e.target.value as TaskPriority
+                        )
+                      }
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                     >
                       <option value="low">Low</option>
@@ -578,8 +635,10 @@ export default function TasksPage() {
                     </label>
                     <input
                       type="date"
-                      value={newTask.dueDate || ''}
-                      onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                      value={newTask.dueDate || ""}
+                      onChange={(e) =>
+                        handleInputChange("dueDate", e.target.value)
+                      }
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                     />
                   </div>
@@ -589,8 +648,10 @@ export default function TasksPage() {
                       Assignee *
                     </label>
                     <select
-                      value={newTask.assignee || ''}
-                      onChange={(e) => handleInputChange('assignee', e.target.value)}
+                      value={newTask.assignee || ""}
+                      onChange={(e) =>
+                        handleInputChange("assignee", e.target.value)
+                      }
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                     >
                       <option value="">Select assignee...</option>
@@ -610,8 +671,10 @@ export default function TasksPage() {
                     Category
                   </label>
                   <select
-                    value={newTask.category || ''}
-                    onChange={(e) => handleInputChange('category', e.target.value)}
+                    value={newTask.category || ""}
+                    onChange={(e) =>
+                      handleInputChange("category", e.target.value)
+                    }
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                   >
                     <option value="">Select category...</option>
@@ -635,7 +698,9 @@ export default function TasksPage() {
                 </button>
                 <button
                   onClick={handleCreateTask}
-                  disabled={!newTask.title || !newTask.dueDate || !newTask.assignee}
+                  disabled={
+                    !newTask.title || !newTask.dueDate || !newTask.assignee
+                  }
                   className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
                 >
                   Create Task
