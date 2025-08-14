@@ -605,20 +605,6 @@ export default function MeetingsPage() {
     [meetings]
   );
 
-  // Optional: highlight when opened from URL while masih di list
-  useEffect(() => {
-    const elId = selectedMeeting?.id && `meeting-${selectedMeeting.id}`;
-    if (!elId || currentView !== "list") return;
-    const el = document.getElementById(elId);
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    el.classList.add("ring-2", "ring-yellow-400", "animate-pulse");
-    const t = window.setTimeout(() => {
-      el.classList.remove("ring-2", "ring-yellow-400", "animate-pulse");
-    }, 1200);
-    return () => window.clearTimeout(t);
-  }, [selectedMeeting?.id, currentView]);
-
   /* ===== Handlers ===== */
   const handleMeetingSelect = (meeting: Meeting) => {
     setSelectedMeeting(meeting);
@@ -661,13 +647,12 @@ export default function MeetingsPage() {
   };
 
   const goToList = () => {
-    // penting: hapus ?id biar efek auto-open nggak kejadian lagi
-    router.replace("/meetings");
+    router.replace("/meetings"); // hapus ?id
     setSelectedMeeting(null);
     setCurrentView("list");
   };
 
-  /* ===== Export PDF + logo center ===== */
+  /* ===== Export PDF ===== */
   async function toDataURL(url: string): Promise<string> {
     try {
       const res = await fetch(url, { cache: "no-store" });
@@ -1039,104 +1024,126 @@ export default function MeetingsPage() {
     </section>
   );
 
-  /* ===== Meeting Form (Create/Edit) ===== */
-  const MeetingForm = React.memo(function MeetingForm({
-    meeting,
-    isCreate,
-    onSave,
-    onCancel,
-  }: {
-    meeting: any;
-    isCreate: boolean;
-    onSave: () => void;
-    onCancel: () => void;
-  }) {
-    const m = meeting as any;
-    const [rows, setRows] = useState<ParticipantRow[]>(
-      participantsToRows(m.participants || [])
+  /* ===== Meeting Form (Create/Edit) — LOCAL STATE ONLY ===== */
+  type MeetingFormProps =
+    | {
+        mode: "create";
+        initial: CreateDraft;
+        onSaveDraft: (draft: CreateDraft) => void;
+        onCancel: () => void;
+      }
+    | {
+        mode: "edit";
+        initial: Meeting;
+        onSaveEdited: (updated: Meeting) => void;
+        onCancel: () => void;
+      };
+
+  const MeetingForm: React.FC<MeetingFormProps> = (props) => {
+    // Normalisasi ke struktur lokal yang sama
+    const isCreate = props.mode === "create";
+    const initTitle = isCreate ? props.initial.title : props.initial.title;
+    const initDate = isCreate ? props.initial.date : props.initial.date;
+    const initTime = startOfRange(
+      isCreate ? props.initial.time : props.initial.time
     );
-    useEffect(() => setRows(participantsToRows(m.participants || [])), []);
+    const initParticipants = isCreate
+      ? props.initial.participants
+      : props.initial.participants;
+    const initAgenda = (
+      isCreate ? props.initial.agenda : props.initial.agenda
+    ).map((a: any) => ({ id: String(a.id ?? makeId()), title: a.title || "" }));
 
-    const handleRowsChange = (next: ParticipantRow[]) => {
-      setRows(next);
-      const participants = rowsToParticipants(next);
-      if (isCreate) setNewMeeting((prev) => ({ ...prev, participants }));
-      else
-        setEditingMeeting((prev) => (prev ? { ...prev, participants } : null));
-    };
+    const [title, setTitle] = useState(initTitle || "");
+    const [date, setDate] = useState(initDate || "");
+    const [time, setTime] = useState(initTime || "");
+    const [rows, setRows] = useState<ParticipantRow[]>(
+      participantsToRows(initParticipants || [])
+    );
+    const [agenda, setAgenda] = useState<{ id: string; title: string }[]>(
+      initAgenda.length ? initAgenda : [{ id: makeId(), title: "" }]
+    );
 
-    const [start, setStart] = useState(startOfRange(m.time));
-    useEffect(() => setStart(startOfRange(m.time)), [m.time]);
-    const updateStart = (v: string) => {
-      setStart(v);
-      if (isCreate) setNewMeeting((prev) => ({ ...prev, time: v }));
-      else setEditingMeeting((prev) => (prev ? { ...prev, time: v } : null));
-    };
+    // Handler peserta
+    const handleRowsChange = (next: ParticipantRow[]) => setRows(next);
 
-    const handlers = {
-      title: (v: string) =>
-        isCreate
-          ? setNewMeeting((p) => ({ ...p, title: v }))
-          : setEditingMeeting((p) => (p ? { ...p, title: v } : null)),
-      date: (v: string) =>
-        isCreate
-          ? setNewMeeting((p) => ({ ...p, date: v }))
-          : setEditingMeeting((p) => (p ? { ...p, date: v } : null)),
-      agendaUpdate: (id: string | number, value: string) => {
-        const op = (arr: any[]) =>
-          arr.map((a) => (a.id === id ? { ...a, title: value } : a));
-        if (isCreate)
-          setNewMeeting((p: any) => ({ ...p, agenda: op(p.agenda) }));
-        else
-          setEditingMeeting((p: any) =>
-            p ? { ...p, agenda: op(p.agenda) } : null
-          );
-      },
-      agendaAdd: () => {
-        const newA = { id: makeId(), title: "", completed: false };
-        if (isCreate)
-          setNewMeeting((p: any) => ({ ...p, agenda: [...p.agenda, newA] }));
-        else
-          setEditingMeeting((p: any) =>
-            p ? { ...p, agenda: [...p.agenda, newA] } : null
-          );
-      },
-      agendaRemove: (id: string | number) => {
-        const op = (arr: any[]) => arr.filter((a) => a.id !== id);
-        if (isCreate)
-          setNewMeeting((p: any) => ({ ...p, agenda: op(p.agenda) }));
-        else
-          setEditingMeeting((p: any) =>
-            p ? { ...p, agenda: op(p.agenda) } : null
-          );
-      },
-    };
+    // Handler agenda
+    const agendaUpdate = (id: string | number, value: string) =>
+      setAgenda((arr) =>
+        arr.map((a) => (a.id === id ? { ...a, title: value } : a))
+      );
+    const agendaAdd = () =>
+      setAgenda((arr) => [...arr, { id: makeId(), title: "" }]);
+    const agendaRemove = (id: string | number) =>
+      setAgenda((arr) =>
+        arr.length > 1 ? arr.filter((a) => a.id !== id) : arr
+      );
 
-    const onSubmit = (e: React.FormEvent) => (e.preventDefault(), onSave());
-    const hasBasic = !!m.title && !!m.date && !!m.time;
+    const hasBasic = !!title && !!date && !!time;
     const hasParticipants = rowsToParticipants(rows).length > 0;
+
+    const onSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!hasBasic || !hasParticipants) return;
+
+      if (isCreate) {
+        const draft: CreateDraft = {
+          title: title.trim(),
+          date,
+          time,
+          participants: rowsToParticipants(rows),
+          agenda: agenda.map((a) => ({
+            id: a.id,
+            title: a.title.trim(),
+            completed: false,
+          })),
+        };
+        props.onSaveDraft(draft);
+      } else {
+        const base = props.initial as Meeting;
+        const updated: Meeting = {
+          ...base,
+          title: title.trim(),
+          date,
+          time,
+          participants: rowsToParticipants(rows),
+          agenda: agenda
+            .map((a) => ({
+              id: a.id,
+              title: a.title.trim(),
+              completed:
+                (base.agenda.find((x) => String(x.id) === String(a.id))
+                  ?.completed ??
+                  false) ||
+                false,
+            }))
+            .filter((a) => a.title),
+        };
+        props.onSaveEdited(updated);
+      }
+    };
 
     return (
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="space-y-3.5">
           <FormInput
             type="text"
-            value={m.title || ""}
-            onChange={(e) => handlers.title(e.target.value)}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="Judul meeting"
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             <FormInput
               type="date"
-              value={m.date || ""}
-              onChange={(e) => handlers.date(e.target.value)}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
             />
             <div className="space-y-1">
               <label className="text-xs text-gray-600">Jam</label>
               <input
                 type="time"
-                value={start}
-                onChange={(e) => updateStart(e.target.value)}
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-gray-900"
               />
             </div>
@@ -1144,11 +1151,12 @@ export default function MeetingsPage() {
         </div>
 
         <ParticipantsForm rows={rows} onRowsChange={handleRowsChange} />
+
         <AgendaForm
-          agenda={m.agenda || []}
-          onUpdate={handlers.agendaUpdate}
-          onAdd={handlers.agendaAdd}
-          onRemove={handlers.agendaRemove}
+          agenda={agenda}
+          onUpdate={agendaUpdate}
+          onAdd={agendaAdd}
+          onRemove={agendaRemove}
         />
 
         <div className="flex gap-3 pt-1.5">
@@ -1165,7 +1173,7 @@ export default function MeetingsPage() {
           </button>
           <button
             type="button"
-            onClick={onCancel}
+            onClick={props.onCancel}
             className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 rounded-xl font-medium transition-colors text-sm"
           >
             Batal
@@ -1173,7 +1181,7 @@ export default function MeetingsPage() {
         </div>
       </form>
     );
-  });
+  };
 
   /* ===== Views ===== */
 
@@ -1387,7 +1395,7 @@ export default function MeetingsPage() {
       [selectedMeeting]
     );
 
-    // ---------- Notulensi (LOCAL state; commit onBlur / Save) ----------
+    // Notulensi — local state → commit onBlur / Save
     const [meetingNotesLocal, setMeetingNotesLocal] = React.useState(
       selectedMeeting.notes || ""
     );
@@ -1400,7 +1408,6 @@ export default function MeetingsPage() {
       updateMeeting((m) => ({ ...m, notes: meetingNotesLocal }));
     };
 
-    // ---------- Agenda Row (LOCAL; commit onBlur / Save) ----------
     const AgendaRow = React.memo(function AgendaRow({
       item,
     }: {
@@ -1932,24 +1939,21 @@ export default function MeetingsPage() {
   };
   const [newMeeting, setNewMeeting] = useState<CreateDraft>(resetDraft);
 
-  const handleCreateMeeting = () => {
-    if (!newMeeting.title || !newMeeting.date || !newMeeting.time) return;
-    const participants: Participant[] = (newMeeting.participants || []).map(
-      (p) => ({
-        id: p.id,
-        name: p.name.trim(),
-        department: p.department,
-        avatar: initials(p.name),
-      })
-    );
-    const agenda: AgendaItem[] = newMeeting.agenda
+  const handleCreateFromDraft = (draft: CreateDraft) => {
+    const participants: Participant[] = (draft.participants || []).map((p) => ({
+      id: p.id,
+      name: p.name.trim(),
+      department: p.department,
+      avatar: initials(p.name),
+    }));
+    const agenda: AgendaItem[] = draft.agenda
       .map((a: any) => ({ ...a, title: (a.title ?? "").trim() }))
       .filter((a: any) => a.title);
     const meeting: Meeting = {
       id: (meetings.at(-1)?.id ?? 0) + 1,
-      title: newMeeting.title.trim(),
-      date: newMeeting.date,
-      time: newMeeting.time,
+      title: draft.title.trim(),
+      date: draft.date,
+      time: draft.time,
       status: "scheduled",
       participants,
       notes: "",
@@ -1960,20 +1964,7 @@ export default function MeetingsPage() {
     setNewMeeting(resetDraft);
   };
 
-  const handleSaveEditedMeeting = () => {
-    if (!editingMeeting) return;
-    const updated: Meeting = {
-      ...editingMeeting,
-      participants: (editingMeeting.participants || [])
-        .map((p) => {
-          const name = (p.name ?? "").trim();
-          return { ...p, name, avatar: initials(name) };
-        })
-        .filter((p) => p.name),
-      agenda: (editingMeeting.agenda || [])
-        .map((a) => ({ ...a, title: (a.title ?? "").trim() }))
-        .filter((a) => a.title),
-    };
+  const handleSaveEditedMeeting = (updated: Meeting) => {
     setMeetings((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
     setSelectedMeeting(updated);
     setShowEditForm(false);
@@ -2050,9 +2041,9 @@ export default function MeetingsPage() {
           }}
         >
           <MeetingForm
-            meeting={newMeeting}
-            isCreate={true}
-            onSave={handleCreateMeeting}
+            mode="create"
+            initial={newMeeting}
+            onSaveDraft={handleCreateFromDraft}
             onCancel={() => {
               setShowCreateForm(false);
               setNewMeeting(resetDraft);
@@ -2070,9 +2061,9 @@ export default function MeetingsPage() {
           }}
         >
           <MeetingForm
-            meeting={editingMeeting}
-            isCreate={false}
-            onSave={handleSaveEditedMeeting}
+            mode="edit"
+            initial={editingMeeting}
+            onSaveEdited={handleSaveEditedMeeting}
             onCancel={() => {
               setShowEditForm(false);
               setEditingMeeting(null);

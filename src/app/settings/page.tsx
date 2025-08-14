@@ -13,21 +13,16 @@ import {
   Volume2,
 } from "lucide-react";
 
-/* ============================
- * Types
- * ============================ */
 type ThemeMode = "light" | "dark" | "system";
 
 interface NotificationSettings {
   inApp: boolean;
   sound: boolean;
   meetingReminders: boolean;
-  reminderTime: number; // minutes before meeting
+  reminderTime: number;
 }
 
-/* ============================
- * Tiny UI helpers
- * ============================ */
+/* Toggle */
 const ToggleSwitch = ({
   enabled,
   onChange,
@@ -62,11 +57,8 @@ const ToggleSwitch = ({
   </div>
 );
 
-/* ============================
- * Theme helpers (dark mode)
- * ============================ */
+/* Theme helpers */
 const THEME_STORAGE_KEY = "toolbox-theme";
-
 function applyTheme(mode: ThemeMode) {
   const root = document.documentElement;
   const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -74,22 +66,16 @@ function applyTheme(mode: ThemeMode) {
     root.classList.toggle("dark", on);
     root.setAttribute("data-theme", on ? "dark" : "light");
   };
-  if (mode === "system") {
-    setDark(media.matches);
-  } else {
-    setDark(mode === "dark");
-  }
+  if (mode === "system") setDark(media.matches);
+  else setDark(mode === "dark");
 }
-
 function useTheme(): [ThemeMode, (m: ThemeMode) => void] {
   const [theme, setTheme] = useState<ThemeMode>("system");
-
   useEffect(() => {
     const saved =
       (localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode) || "system";
     setTheme(saved);
     applyTheme(saved);
-
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
       const current =
@@ -99,32 +85,25 @@ function useTheme(): [ThemeMode, (m: ThemeMode) => void] {
     media.addEventListener("change", handler);
     return () => media.removeEventListener("change", handler);
   }, []);
-
   const update = (m: ThemeMode) => {
     setTheme(m);
     localStorage.setItem(THEME_STORAGE_KEY, m);
     applyTheme(m);
   };
-
   return [theme, update];
 }
 
-/* ============================
- * Page
- * ============================ */
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"notifications" | "appearance">(
     "notifications"
   );
   const [saved, setSaved] = useState(false);
-
   const [notifications, setNotifications] = useState<NotificationSettings>({
     inApp: true,
     sound: true,
     meetingReminders: true,
     reminderTime: 15,
   });
-
   const [theme, setTheme] = useTheme();
 
   const tabs = useMemo(
@@ -223,7 +202,12 @@ export default function SettingsPage() {
               reminderTime: parseInt(e.target.value, 10),
             })
           }
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#009a44] focus:border-[#009a44]"
+          className="
+            w-full p-3 border border-gray-300 rounded-lg
+            focus:ring-2 focus:ring-[#009a44] focus:border-[#009a44]
+            disabled:text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-100
+            text-gray-900
+          "
           disabled={!notifications.meetingReminders}
         >
           <option value={5}>5 menit</option>
@@ -268,9 +252,16 @@ export default function SettingsPage() {
     activeTab === "notifications" ? <NotificationsSection /> : <ThemeSection />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f4fbf7] via-[#fffbea] to-[#e9f8f0]">
-      {/* Header lokal: nempel di bawah header global (h-14) */}
-      <div className="sticky top-14 bg-white/90 backdrop-blur-md border-b border-[#009a44]/20 px-4 py-4 z-40">
+    <div className="min-h-full bg-gradient-to-br from-[#f4fbf7] via-[#fffbea] to-[#e9f8f0]">
+      {/* Header lokal: STICKY di atas area main (scroll container) */}
+      <div
+        className="
+          sticky top-0 z-10
+          bg-white/90 backdrop-blur-md border-b border-[#009a44]/20
+          px-4 py-4
+          shadow-[0_6px_24px_-12px_rgba(0,0,0,0.12)]
+        "
+      >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-gradient-to-r from-[#009a44] to-[#007d37] rounded-xl">
@@ -310,8 +301,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Body */}
-      <div className="max-w-6xl mx-auto p-4 lg:p-6">
+      {/* Body: kasih padding-top kecil supaya konten gak “nempel” header */}
+      <div className="max-w-6xl mx-auto p-4 lg:p-6 pt-4 lg:pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left nav */}
           <div className="lg:col-span-1">
