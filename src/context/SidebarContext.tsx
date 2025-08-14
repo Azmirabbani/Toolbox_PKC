@@ -1,7 +1,6 @@
-// context/SidebarContext.tsx
-'use client';
+"use client";
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState } from "react";
 
 interface SidebarContextType {
   isOpen: boolean;
@@ -13,10 +12,14 @@ const SidebarContext = createContext<SidebarContextType>({
   toggleSidebar: () => {},
 });
 
-export const SidebarProvider = ({ children }: { children: React.ReactNode }) => {
+export const SidebarProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [isOpen, setIsOpen] = useState(true);
-
-  const toggleSidebar = () => setIsOpen(!isOpen);
+  // functional updater biar aman saat spam klik
+  const toggleSidebar = () => setIsOpen((v) => !v);
 
   return (
     <SidebarContext.Provider value={{ isOpen, toggleSidebar }}>

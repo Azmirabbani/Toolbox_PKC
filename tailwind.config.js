@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class", // ⬅️ tambahkan ini
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
     // pastikan semua file yang menggunakan tailwind terdaftar di sini
@@ -8,7 +9,7 @@ module.exports = {
     extend: {},
   },
   plugins: [
-    require('@tailwindcss/typography'),
+    require("@tailwindcss/typography"),
     // plugin lainnya kalau ada
   ],
-}
+};
