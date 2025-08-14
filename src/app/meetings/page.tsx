@@ -17,7 +17,7 @@ import {
   ChevronRight,
   Eye,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 /* ========= Types ========= */
 type MeetingStatus = "scheduled" | "ongoing" | "completed";
@@ -41,7 +41,7 @@ interface Meeting {
   id: number;
   title: string;
   date: string; // YYYY-MM-DD
-  time: string; // "HH:mm" atau "HH:mm - HH:mm"
+  time: string; // "HH:mm - HH:mm" / "HH:mm"
   status: MeetingStatus;
   participants: Participant[];
   notes: string;
@@ -55,7 +55,7 @@ type CreateDraft = {
   title: string;
   date: string;
   time: string;
-  agenda: { id: string; title: string; completed?: boolean }[];
+  agenda: { id: string; title: string; completed: boolean }[];
   participants: Participant[];
 };
 
@@ -193,30 +193,26 @@ const ProgressIndicator = ({
   currentStep: number;
   steps: string[];
 }) => (
-  <div className="flex items-center gap-2 mb-6">
+  <div className="flex items-center gap-2 mb-4 sm:mb-6">
     {steps.map((step, index) => (
       <React.Fragment key={index}>
         <div
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-            index < currentStep
+          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium ${
+            index <= currentStep
               ? "bg-green-100 text-green-700"
-              : index === currentStep
-              ? "bg-yellow-100 text-yellow-700"
               : "bg-gray-100 text-gray-500"
           }`}
         >
           <div
-            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-              index < currentStep
+            className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+              index <= currentStep
                 ? "bg-green-500 text-white"
-                : index === currentStep
-                ? "bg-yellow-500 text-white"
                 : "bg-gray-300 text-gray-600"
             }`}
           >
             {index < currentStep ? "✓" : index + 1}
           </div>
-          {step}
+          <span className="hidden sm:block">{step}</span>
         </div>
         {index < steps.length - 1 && (
           <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -227,9 +223,9 @@ const ProgressIndicator = ({
 );
 
 const ParticipantCard = ({ participant }: { participant: Participant }) => (
-  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-yellow-50 rounded-xl border border-green-100">
-    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center shadow-sm">
-      <span className="text-white font-medium text-sm">
+  <div className="flex items-center gap-3 p-3.5 bg-gradient-to-r from-green-50 to-yellow-50 rounded-xl border border-green-100">
+    <div className="w-9 h-9 bg-gradient-to-br from-green-500 to-yellow-500 rounded-full flex items-center justify-center shadow-sm">
+      <span className="text-white font-medium text-xs">
         {participant.avatar}
       </span>
     </div>
@@ -370,37 +366,9 @@ const MeetingCard = ({
   );
 };
 
-/* ========= SearchParams wrapper (suspense) ========= */
-function OpenFromQuery({
-  meetings,
-  onOpen,
-}: {
-  meetings: Meeting[];
-  onOpen: (m: Meeting, view: "detail" | "ongoing" | "completed") => void;
-}) {
-  const searchParams = useSearchParams();
-  useEffect(() => {
-    const id = searchParams.get("id");
-    if (!id) return;
-    const target =
-      meetings.find((m) => String(m.id) === id) ||
-      meetings.find((m) => m.status === "ongoing");
-    if (!target) return;
-    onOpen(
-      target,
-      target.status === "ongoing"
-        ? "ongoing"
-        : target.status === "completed"
-        ? "completed"
-        : "detail"
-    );
-    // ⚠️ tidak mengubah URL dan tidak trigger replace agar input tidak kehilangan fokus
-  }, [searchParams, meetings, onOpen]);
-  return null;
-}
-
 /* ========= Page ========= */
 export default function MeetingsPage() {
+  const router = useRouter();
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [currentView, setCurrentView] = useState<
     "list" | "detail" | "ongoing" | "completed"
@@ -605,14 +573,51 @@ export default function MeetingsPage() {
     return list;
   }, [meetings, filter, query, today]);
 
-  // open from ?id=
-  const openFromQuery = (
-    m: Meeting,
-    view: "detail" | "ongoing" | "completed"
-  ) => {
-    setSelectedMeeting(m);
-    setCurrentView(view);
-  };
+  /* ===== Read ?id= from URL via Suspense bridge ===== */
+  function SearchParamsBridge({
+    onOpenById,
+  }: {
+    onOpenById: (id: string) => void;
+  }) {
+    const params = useSearchParams();
+    useEffect(() => {
+      const id = params.get("id");
+      if (id) onOpenById(id);
+    }, [params, onOpenById]);
+    return null;
+  }
+
+  const openById = React.useCallback(
+    (id: string) => {
+      const target =
+        meetings.find((m) => String(m.id) === id) ||
+        meetings.find((m) => m.status === "ongoing");
+      if (!target) return;
+      setSelectedMeeting(target);
+      setCurrentView(
+        target.status === "ongoing"
+          ? "ongoing"
+          : target.status === "completed"
+          ? "completed"
+          : "detail"
+      );
+    },
+    [meetings]
+  );
+
+  // Optional: highlight when opened from URL while masih di list
+  useEffect(() => {
+    const elId = selectedMeeting?.id && `meeting-${selectedMeeting.id}`;
+    if (!elId || currentView !== "list") return;
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-2", "ring-yellow-400", "animate-pulse");
+    const t = window.setTimeout(() => {
+      el.classList.remove("ring-2", "ring-yellow-400", "animate-pulse");
+    }, 1200);
+    return () => window.clearTimeout(t);
+  }, [selectedMeeting?.id, currentView]);
 
   /* ===== Handlers ===== */
   const handleMeetingSelect = (meeting: Meeting) => {
@@ -651,11 +656,18 @@ export default function MeetingsPage() {
       }),
     };
     setMeetings((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
-    setSelectedMeeting(updated); // tetap di view ini tanpa remount input
+    setSelectedMeeting(updated);
     setCurrentView("completed");
   };
 
-  /* ===== Export PDF ===== */
+  const goToList = () => {
+    // penting: hapus ?id biar efek auto-open nggak kejadian lagi
+    router.replace("/meetings");
+    setSelectedMeeting(null);
+    setCurrentView("list");
+  };
+
+  /* ===== Export PDF + logo center ===== */
   async function toDataURL(url: string): Promise<string> {
     try {
       const res = await fetch(url, { cache: "no-store" });
@@ -677,6 +689,7 @@ export default function MeetingsPage() {
     const doneAgendas = m.agenda.filter((a) => a.completed);
     const followUps = m.agenda.filter((a) => a.needsFollowUp);
     const dateStr = fmtDateID(m.date);
+
     const logoData = await toDataURL(LOGO_URL);
     const w = window.open("", "_blank");
     if (!w) return;
@@ -814,7 +827,7 @@ export default function MeetingsPage() {
     w.focus();
   };
 
-  /* ===== Shared Inputs ===== */
+  /* ===== Form helpers ===== */
   const FormInput = ({
     type,
     value,
@@ -833,7 +846,7 @@ export default function MeetingsPage() {
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder-gray-500 ${className}`}
+      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-gray-900 placeholder-gray-500 ${className}`}
       autoComplete="off"
     />
   );
@@ -849,286 +862,321 @@ export default function MeetingsPage() {
         avatar: initials(r.name),
       }));
 
-  /* ===== Meeting Form (Create/Edit) — LOCAL DRAFT ===== */
-  function MeetingForm({
-    initial,
-    mode,
-    onSubmit,
-    onCancel,
-  }: {
-    initial: CreateDraft | Meeting;
-    mode: "create" | "edit";
-    onSubmit: (draft: CreateDraft | Meeting) => void;
-    onCancel: () => void;
-  }) {
-    // salin ke draft lokal agar ketikan tidak memicu re-render parent
-    const [draft, setDraft] = useState<CreateDraft | Meeting>(() => {
-      if (mode === "create") return initial as CreateDraft;
-      const m = initial as Meeting;
+  const participantsToRows = (parts: Participant[]): ParticipantRow[] =>
+    (parts || []).map((p) => {
+      let dep = p.department || "";
+      if (!dep)
+        dep =
+          Object.keys(DEPARTMENTS).find((d) =>
+            DEPARTMENTS[d].includes(p.name)
+          ) || "";
       return {
-        ...m,
-        agenda: m.agenda.map((a) => ({ ...a })),
-        participants: m.participants.map((p) => ({ ...p })),
+        id: String(p.id ?? makeId()),
+        department: dep,
+        name: p.name || "",
       };
     });
 
-    // participant rows lokal
-    const [rows, setRows] = useState<ParticipantRow[]>(() => {
-      const parts =
-        (mode === "create"
-          ? (initial as CreateDraft).participants
-          : (initial as Meeting).participants) || [];
-      return parts.map((p) => ({
-        id: typeof p.id === "string" ? p.id : String(p.id),
-        department:
-          p.department ||
-          Object.keys(DEPARTMENTS).find((d) =>
-            DEPARTMENTS[d].includes(p.name)
-          ) ||
-          "",
-        name: p.name,
-      }));
-    });
-
-    const setField = (k: string, v: any) =>
-      setDraft((prev: any) => ({ ...prev, [k]: v }));
-
-    const start = startOfRange((draft as any).time || "");
-    const setStart = (v: string) => setField("time", v);
-
-    const agenda = (draft as any).agenda as { id: any; title: string }[];
-    const updateAgenda = (id: any, title: string) =>
-      setField(
-        "agenda",
-        agenda.map((a) => (a.id === id ? { ...a, title } : a))
-      );
-    const addAgenda = () =>
-      setField("agenda", [...agenda, { id: makeId(), title: "" }]);
-    const removeAgenda = (id: any) =>
-      setField(
-        "agenda",
-        agenda.length <= 1 ? agenda : agenda.filter((a) => a.id !== id)
-      );
-
-    const commit = (e: React.FormEvent) => {
-      e.preventDefault();
-      const participants = rowsToParticipants(rows);
-      const cleaned =
-        mode === "create"
-          ? ({
-              ...(draft as CreateDraft),
-              title: (draft as any).title?.trim() || "",
-              agenda: ((draft as any).agenda || [])
-                .map((a: any) => ({
-                  ...a,
-                  title: (a.title ?? "").trim(),
-                }))
-                .filter((a: any) => a.title),
-              participants,
-            } as CreateDraft)
-          : ({
-              ...(draft as Meeting),
-              title: (draft as any).title?.trim() || "",
-              agenda: ((draft as any).agenda || [])
-                .map((a: any) => ({
-                  ...a,
-                  title: (a.title ?? "").trim(),
-                }))
-                .filter((a: any) => a.title),
-              participants,
-            } as Meeting);
-      onSubmit(cleaned);
-    };
+  function ParticipantSelectRow({
+    row,
+    allRows,
+    onChange,
+    onRemove,
+  }: {
+    row: ParticipantRow;
+    allRows: ParticipantRow[];
+    onChange: (patch: Partial<ParticipantRow>) => void;
+    onRemove: () => void;
+  }) {
+    const depOptions = Object.keys(DEPARTMENTS);
+    const used = new Set(
+      allRows
+        .filter((r) => r.id !== row.id)
+        .map((r) => `${r.department}::${r.name}`)
+    );
+    const nameOptions = row.department
+      ? (DEPARTMENTS[row.department] || []).filter(
+          (n) => !used.has(`${row.department}::${n}`)
+        )
+      : [];
 
     return (
-      <form onSubmit={commit} className="space-y-6" key={mode}>
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-lg">
+        <select
+          value={row.department}
+          onChange={(e) => onChange({ department: e.target.value, name: "" })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-gray-900"
+        >
+          <option value="">Pilih departemen</option>
+          {depOptions.map((dep) => (
+            <option key={dep} value={dep}>
+              {dep}
+            </option>
+          ))}
+        </select>
+        <select
+          value={row.name}
+          onChange={(e) => onChange({ name: e.target.value })}
+          disabled={!row.department}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-gray-900 disabled:bg-gray-100 disabled:text-gray-500"
+        >
+          <option value="">
+            {row.department ? "Pilih nama" : "Pilih departemen dulu"}
+          </option>
+          {nameOptions.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm flex items-center justify-center"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
+  function ParticipantsForm({
+    rows,
+    onRowsChange,
+    title = "Peserta",
+  }: {
+    rows: ParticipantRow[];
+    onRowsChange: (next: ParticipantRow[]) => void;
+    title?: string;
+  }) {
+    const addRow = () =>
+      onRowsChange([...rows, { id: makeId(), department: "", name: "" }]);
+    const updateRow = (id: string, patch: Partial<ParticipantRow>) =>
+      onRowsChange(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    const removeRow = (id: string) =>
+      onRowsChange(rows.filter((r) => r.id !== id));
+
+    return (
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm sm:text-base font-medium text-gray-900">
+            {title}
+          </h4>
+          <button
+            type="button"
+            onClick={addRow}
+            className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-1"
+          >
+            <Plus className="w-4 h-4" /> Tambah
+          </button>
+        </div>
+        {rows.length === 0 ? (
+          <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
+            Belum ada peserta. Klik <b>Tambah</b> untuk menambah baris.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {rows.map((r) => (
+              <ParticipantSelectRow
+                key={r.id}
+                row={r}
+                allRows={rows}
+                onChange={(patch) => updateRow(r.id, patch)}
+                onRemove={() => removeRow(r.id)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  const AgendaForm = ({
+    agenda,
+    onUpdate,
+    onAdd,
+    onRemove,
+  }: {
+    agenda: { id: string; title: string }[];
+    onUpdate: (id: string | number, value: string) => void;
+    onAdd: () => void;
+    onRemove: (id: string | number) => void;
+  }) => (
+    <section>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm sm:text-base font-medium text-gray-900">
+          Agenda
+        </h4>
+        <button
+          type="button"
+          onClick={(e) => (e.preventDefault(), onAdd())}
+          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-1"
+        >
+          <Plus className="w-4 h-4" /> Tambah
+        </button>
+      </div>
+      <div className="space-y-3">
+        {agenda.map((item, i) => (
+          <div key={item.id} className="flex gap-3">
+            <FormInput
+              type="text"
+              placeholder={`Agenda ${i + 1}`}
+              value={item.title ?? ""}
+              onChange={(e) => onUpdate(item.id, e.target.value)}
+              className="flex-1"
+            />
+            <button
+              type="button"
+              onClick={(e) => (e.preventDefault(), onRemove(item.id))}
+              disabled={agenda.length === 1}
+              className="px-3 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white rounded-lg text-sm disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
+  /* ===== Meeting Form (Create/Edit) ===== */
+  const MeetingForm = React.memo(function MeetingForm({
+    meeting,
+    isCreate,
+    onSave,
+    onCancel,
+  }: {
+    meeting: any;
+    isCreate: boolean;
+    onSave: () => void;
+    onCancel: () => void;
+  }) {
+    const m = meeting as any;
+    const [rows, setRows] = useState<ParticipantRow[]>(
+      participantsToRows(m.participants || [])
+    );
+    useEffect(() => setRows(participantsToRows(m.participants || [])), []);
+
+    const handleRowsChange = (next: ParticipantRow[]) => {
+      setRows(next);
+      const participants = rowsToParticipants(next);
+      if (isCreate) setNewMeeting((prev) => ({ ...prev, participants }));
+      else
+        setEditingMeeting((prev) => (prev ? { ...prev, participants } : null));
+    };
+
+    const [start, setStart] = useState(startOfRange(m.time));
+    useEffect(() => setStart(startOfRange(m.time)), [m.time]);
+    const updateStart = (v: string) => {
+      setStart(v);
+      if (isCreate) setNewMeeting((prev) => ({ ...prev, time: v }));
+      else setEditingMeeting((prev) => (prev ? { ...prev, time: v } : null));
+    };
+
+    const handlers = {
+      title: (v: string) =>
+        isCreate
+          ? setNewMeeting((p) => ({ ...p, title: v }))
+          : setEditingMeeting((p) => (p ? { ...p, title: v } : null)),
+      date: (v: string) =>
+        isCreate
+          ? setNewMeeting((p) => ({ ...p, date: v }))
+          : setEditingMeeting((p) => (p ? { ...p, date: v } : null)),
+      agendaUpdate: (id: string | number, value: string) => {
+        const op = (arr: any[]) =>
+          arr.map((a) => (a.id === id ? { ...a, title: value } : a));
+        if (isCreate)
+          setNewMeeting((p: any) => ({ ...p, agenda: op(p.agenda) }));
+        else
+          setEditingMeeting((p: any) =>
+            p ? { ...p, agenda: op(p.agenda) } : null
+          );
+      },
+      agendaAdd: () => {
+        const newA = { id: makeId(), title: "", completed: false };
+        if (isCreate)
+          setNewMeeting((p: any) => ({ ...p, agenda: [...p.agenda, newA] }));
+        else
+          setEditingMeeting((p: any) =>
+            p ? { ...p, agenda: [...p.agenda, newA] } : null
+          );
+      },
+      agendaRemove: (id: string | number) => {
+        const op = (arr: any[]) => arr.filter((a) => a.id !== id);
+        if (isCreate)
+          setNewMeeting((p: any) => ({ ...p, agenda: op(p.agenda) }));
+        else
+          setEditingMeeting((p: any) =>
+            p ? { ...p, agenda: op(p.agenda) } : null
+          );
+      },
+    };
+
+    const onSubmit = (e: React.FormEvent) => (e.preventDefault(), onSave());
+    const hasBasic = !!m.title && !!m.date && !!m.time;
+    const hasParticipants = rowsToParticipants(rows).length > 0;
+
+    return (
+      <form onSubmit={onSubmit} className="space-y-5">
+        <div className="space-y-3.5">
           <FormInput
             type="text"
-            value={(draft as any).title || ""}
-            onChange={(e) => setField("title", e.target.value)}
+            value={m.title || ""}
+            onChange={(e) => handlers.title(e.target.value)}
             placeholder="Judul meeting"
           />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             <FormInput
               type="date"
-              value={(draft as any).date || ""}
-              onChange={(e) => setField("date", e.target.value)}
+              value={m.date || ""}
+              onChange={(e) => handlers.date(e.target.value)}
             />
             <div className="space-y-1">
               <label className="text-xs text-gray-600">Jam</label>
               <input
                 type="time"
                 value={start}
-                onChange={(e) => setStart(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
+                onChange={(e) => updateStart(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-gray-900"
               />
             </div>
           </div>
         </div>
 
-        {/* Peserta */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-base font-medium text-gray-900">Peserta</h4>
-            <button
-              type="button"
-              onClick={() =>
-                setRows((prev) => [
-                  ...prev,
-                  { id: makeId(), department: "", name: "" },
-                ])
-              }
-              className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"
-            >
-              <Plus className="w-4 h-4" /> Tambah
-            </button>
-          </div>
-          {rows.length === 0 ? (
-            <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
-              Belum ada peserta. Klik <b>Tambah</b> untuk menambah baris.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {rows.map((r, idx) => {
-                const depOptions = Object.keys(DEPARTMENTS);
-                const used = new Set(
-                  rows
-                    .filter((x) => x.id !== r.id)
-                    .map((x) => `${x.department}::${x.name}`)
-                );
-                const nameOptions = r.department
-                  ? (DEPARTMENTS[r.department] || []).filter(
-                      (n) => !used.has(`${r.department}::${n}`)
-                    )
-                  : [];
-                return (
-                  <div
-                    key={r.id}
-                    className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-lg"
-                  >
-                    <select
-                      value={r.department}
-                      onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((x) =>
-                            x.id === r.id
-                              ? { ...x, department: e.target.value, name: "" }
-                              : x
-                          )
-                        )
-                      }
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
-                    >
-                      <option value="">Pilih departemen</option>
-                      {depOptions.map((dep) => (
-                        <option key={dep} value={dep}>
-                          {dep}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={r.name}
-                      onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((x) =>
-                            x.id === r.id ? { ...x, name: e.target.value } : x
-                          )
-                        )
-                      }
-                      disabled={!r.department}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 disabled:bg-gray-100 disabled:text-gray-500"
-                    >
-                      <option value="">
-                        {r.department ? "Pilih nama" : "Pilih departemen dulu"}
-                      </option>
-                      {nameOptions.map((n) => (
-                        <option key={n} value={n}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRows((prev) => prev.filter((x) => x.id !== r.id))
-                      }
-                      className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm flex items-center justify-center"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+        <ParticipantsForm rows={rows} onRowsChange={handleRowsChange} />
+        <AgendaForm
+          agenda={m.agenda || []}
+          onUpdate={handlers.agendaUpdate}
+          onAdd={handlers.agendaAdd}
+          onRemove={handlers.agendaRemove}
+        />
 
-        {/* Agenda */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-base font-medium text-gray-900">Agenda</h4>
-            <button
-              type="button"
-              onClick={addAgenda}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"
-            >
-              <Plus className="w-4 h-4" /> Tambah
-            </button>
-          </div>
-          <div className="space-y-3">
-            {agenda.map((item, i) => (
-              <div key={item.id} className="flex gap-3">
-                <FormInput
-                  type="text"
-                  placeholder={`Agenda ${i + 1}`}
-                  value={item.title ?? ""}
-                  onChange={(e) => updateAgenda(item.id, e.target.value)}
-                  className="flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeAgenda(item.id)}
-                  disabled={agenda.length === 1}
-                  className="px-3 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white rounded-lg text-sm disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <div className="flex gap-3 pt-2">
+        <div className="flex gap-3 pt-1.5">
           <button
             type="submit"
-            disabled={
-              !(draft as any).title ||
-              !(draft as any).date ||
-              !start ||
-              rowsToParticipants(rows).length === 0
-            }
+            disabled={!(hasBasic && hasParticipants)}
             className={`flex-1 ${
-              mode === "create"
+              isCreate
                 ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                 : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-            } disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-3 rounded-xl font-medium transition-all duration-200`}
+            } disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-2.5 rounded-xl font-medium transition-all duration-200 text-sm`}
           >
-            {mode === "create" ? "Buat Meeting" : "Update Meeting"}
+            {isCreate ? "Buat Meeting" : "Update Meeting"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-medium transition-colors"
+            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 rounded-xl font-medium transition-colors text-sm"
           >
             Batal
           </button>
         </div>
       </form>
     );
-  }
+  });
 
   /* ===== Views ===== */
+
   const PriorityStrip = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
       {/* LIVE */}
@@ -1327,77 +1375,49 @@ export default function MeetingsPage() {
   const OngoingView = () => {
     if (!selectedMeeting) return null;
 
-    // update helper — tidak mengganti instance textarea (hindari blur)
-    const patchSelected = (patch: Partial<Meeting>) => {
-      setSelectedMeeting((prev) => (prev ? { ...prev, ...patch } : prev));
-      setMeetings((prev) =>
-        prev.map((m) => (m.id === selectedMeeting.id ? { ...m, ...patch } : m))
-      );
-    };
+    // helper update state meeting terpilih + daftar
+    const updateMeeting = React.useCallback(
+      (updater: (m: Meeting) => Meeting) => {
+        const updated = updater(selectedMeeting);
+        setSelectedMeeting(updated);
+        setMeetings((prev) =>
+          prev.map((m) => (m.id === updated.id ? updated : m))
+        );
+      },
+      [selectedMeeting]
+    );
 
-    // Notulensi meeting — lokal + debounce
-    const [meetingNotes, setMeetingNotes] = useState(
+    // ---------- Notulensi (LOCAL state; commit onBlur / Save) ----------
+    const [meetingNotesLocal, setMeetingNotesLocal] = React.useState(
       selectedMeeting.notes || ""
     );
-    const meetingAutosaveRef = useRef<number | null>(null);
-
     useEffect(() => {
-      setMeetingNotes(selectedMeeting.notes || "");
+      setMeetingNotesLocal(selectedMeeting.notes || "");
     }, [selectedMeeting.id]);
 
-    const handleMeetingNotesChange = (v: string) => {
-      setMeetingNotes(v);
-      if (meetingAutosaveRef.current) {
-        window.clearTimeout(meetingAutosaveRef.current);
-      }
-      meetingAutosaveRef.current = window.setTimeout(() => {
-        patchSelected({ notes: v });
-        meetingAutosaveRef.current = null;
-      }, 500);
+    const commitMeetingNotes = () => {
+      if (meetingNotesLocal === (selectedMeeting.notes || "")) return;
+      updateMeeting((m) => ({ ...m, notes: meetingNotesLocal }));
     };
 
-    useEffect(() => {
-      return () => {
-        if (meetingAutosaveRef.current) {
-          window.clearTimeout(meetingAutosaveRef.current);
-        }
-      };
-    }, []);
-
-    // Row agenda — lokal + debounce
+    // ---------- Agenda Row (LOCAL; commit onBlur / Save) ----------
     const AgendaRow = React.memo(function AgendaRow({
       item,
     }: {
       item: AgendaItem;
     }) {
-      const [localNotes, setLocalNotes] = useState(item.notes ?? "");
-      const debounceRef = useRef<number | null>(null);
+      const [localNotes, setLocalNotes] = React.useState(item.notes ?? "");
+      useEffect(() => setLocalNotes(item.notes ?? ""), [item.id, item.notes]);
 
-      useEffect(() => {
-        setLocalNotes(item.notes ?? "");
-      }, [item.id, item.notes]);
-
-      const save = (value: Partial<AgendaItem>) =>
-        patchSelected({
-          agenda: selectedMeeting.agenda.map((ag) =>
-            ag.id === item.id ? { ...ag, ...value } : ag
+      const commitNotes = () => {
+        if (localNotes === (item.notes || "")) return;
+        updateMeeting((m) => ({
+          ...m,
+          agenda: m.agenda.map((ag) =>
+            ag.id === item.id ? { ...ag, notes: localNotes } : ag
           ),
-        });
-
-      const handleNotesChange = (value: string) => {
-        setLocalNotes(value);
-        if (debounceRef.current) window.clearTimeout(debounceRef.current);
-        debounceRef.current = window.setTimeout(() => {
-          save({ notes: value });
-          debounceRef.current = null;
-        }, 500);
+        }));
       };
-
-      useEffect(() => {
-        return () => {
-          if (debounceRef.current) window.clearTimeout(debounceRef.current);
-        };
-      }, []);
 
       return (
         <div className="border rounded-xl p-4 bg-gray-50">
@@ -1407,7 +1427,16 @@ export default function MeetingsPage() {
               <input
                 type="checkbox"
                 checked={!!item.completed}
-                onChange={(e) => save({ completed: e.target.checked })}
+                onChange={(e) =>
+                  updateMeeting((m) => ({
+                    ...m,
+                    agenda: m.agenda.map((ag) =>
+                      ag.id === item.id
+                        ? { ...ag, completed: e.target.checked }
+                        : ag
+                    ),
+                  }))
+                }
                 className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
               />
               <span className="text-sm text-gray-600">Selesai</span>
@@ -1416,9 +1445,10 @@ export default function MeetingsPage() {
 
           <textarea
             value={localNotes}
-            onChange={(e) => handleNotesChange(e.target.value)}
+            onChange={(e) => setLocalNotes(e.target.value)}
+            onBlur={commitNotes}
             placeholder="Catatan untuk agenda ini..."
-            className="w-full h-20 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder-gray-500"
+            className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-gray-900 placeholder-gray-500"
           />
 
           <div className="mt-3 flex items-center gap-3 flex-wrap">
@@ -1426,7 +1456,22 @@ export default function MeetingsPage() {
               <input
                 type="checkbox"
                 checked={!!item.needsFollowUp}
-                onChange={(e) => save({ needsFollowUp: e.target.checked })}
+                onChange={(e) =>
+                  updateMeeting((m) => ({
+                    ...m,
+                    agenda: m.agenda.map((ag) =>
+                      ag.id === item.id
+                        ? {
+                            ...ag,
+                            needsFollowUp: e.target.checked,
+                            followUpDate: e.target.checked
+                              ? ag.followUpDate
+                              : undefined,
+                          }
+                        : ag
+                    ),
+                  }))
+                }
                 className="w-4 h-4 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500"
               />
               <span className="text-sm text-gray-600">Perlu tindak lanjut</span>
@@ -1437,7 +1482,14 @@ export default function MeetingsPage() {
               value={item.followUpDate ?? ""}
               disabled={!item.needsFollowUp}
               onChange={(e) =>
-                save({ followUpDate: e.target.value || undefined })
+                updateMeeting((m) => ({
+                  ...m,
+                  agenda: m.agenda.map((ag) =>
+                    ag.id === item.id
+                      ? { ...ag, followUpDate: e.target.value || undefined }
+                      : ag
+                  ),
+                }))
               }
               className={`px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition ${
                 item.needsFollowUp
@@ -1445,6 +1497,14 @@ export default function MeetingsPage() {
                   : "opacity-50 pointer-events-none bg-gray-100 text-gray-500"
               }`}
             />
+
+            <button
+              type="button"
+              onClick={commitNotes}
+              className="ml-auto px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 text-white hover:bg-green-700"
+            >
+              Simpan Catatan
+            </button>
           </div>
         </div>
       );
@@ -1452,13 +1512,13 @@ export default function MeetingsPage() {
 
     return (
       <div className="space-y-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-5">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                 {selectedMeeting.title}
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm">
                 Meeting sedang berlangsung - {selectedMeeting.startTime}
               </p>
             </div>
@@ -1469,7 +1529,7 @@ export default function MeetingsPage() {
               </div>
               <button
                 onClick={handleCompleteMeeting}
-                className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium"
+                className="px-4 sm:px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium text-sm"
               >
                 Selesaikan Meeting
               </button>
@@ -1484,8 +1544,8 @@ export default function MeetingsPage() {
           />
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-5">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
             Progress Agenda
           </h3>
           <div className="space-y-4">
@@ -1495,18 +1555,28 @@ export default function MeetingsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Notulensi Meeting
-          </h3>
+        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+              Notulensi Meeting
+            </h3>
+            <button
+              type="button"
+              onClick={commitMeetingNotes}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 text-white hover:bg-green-700"
+            >
+              Simpan Notulensi
+            </button>
+          </div>
           <textarea
-            value={meetingNotes}
-            onChange={(e) => handleMeetingNotesChange(e.target.value)}
+            value={meetingNotesLocal}
+            onChange={(e) => setMeetingNotesLocal(e.target.value)}
+            onBlur={commitMeetingNotes}
             placeholder="Tulis notulensi lengkap meeting di sini..."
-            className="w-full h-32 p-4 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder-gray-500"
+            className="w-full h-28 px-3 py-2 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-gray-900 placeholder-gray-500"
           />
           <p className="text-xs text-gray-500 mt-2">
-            Perubahan disimpan otomatis.
+            Catatan disimpan saat Anda klik “Simpan” atau keluar dari kolom.
           </p>
         </div>
       </div>
@@ -1517,26 +1587,19 @@ export default function MeetingsPage() {
     if (!selectedMeeting) return null;
     const [editingNotes, setEditingNotes] = useState(false);
     const [localNotes, setLocalNotes] = useState(selectedMeeting.notes || "");
-    const saveRef = useRef<number | null>(null);
 
     useEffect(() => {
       setLocalNotes(selectedMeeting.notes || "");
       setEditingNotes(false);
     }, [selectedMeeting.id]);
 
-    const saveNotesDebounced = (next: string) => {
-      setLocalNotes(next);
-      if (saveRef.current) window.clearTimeout(saveRef.current);
-      saveRef.current = window.setTimeout(() => {
-        // patch tanpa remount
-        setSelectedMeeting((prev) => (prev ? { ...prev, notes: next } : prev));
-        setMeetings((prev) =>
-          prev.map((m) =>
-            m.id === selectedMeeting.id ? { ...m, notes: next } : m
-          )
-        );
-        saveRef.current = null;
-      }, 500);
+    const saveNotes = () => {
+      if (localNotes === (selectedMeeting.notes || "")) return;
+      const updated = { ...selectedMeeting, notes: localNotes };
+      setSelectedMeeting(updated);
+      setMeetings((prev) =>
+        prev.map((m) => (m.id === updated.id ? updated : m))
+      );
     };
 
     const attended = selectedMeeting.participants.filter((p) => p.attended);
@@ -1545,18 +1608,18 @@ export default function MeetingsPage() {
 
     return (
       <div className="space-y-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-5">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                 {selectedMeeting.title}
               </h2>
-              <div className="flex flex-wrap items-center gap-4 text-gray-600 mt-2">
+              <div className="flex flex-wrap items-center gap-3 text-gray-600 mt-1.5 text-sm">
                 <span>{fmtDateID(selectedMeeting.date)}</span>
                 <span>
                   {selectedMeeting.startTime} - {selectedMeeting.endTime}
                 </span>
-                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                   Meeting Selesai
                 </span>
               </div>
@@ -1564,13 +1627,13 @@ export default function MeetingsPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setEditingNotes((v) => !v)}
-                className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl font-medium"
+                className="px-4 md:px-5 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl font-medium text-sm"
               >
                 {editingNotes ? "Selesai Edit Notulensi" : "Edit Notulensi"}
               </button>
               <button
                 onClick={exportToPDF}
-                className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium flex items-center gap-2"
+                className="px-4 md:px-5 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium text-sm flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
                 Export PDF
@@ -1579,19 +1642,19 @@ export default function MeetingsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-5">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
             Peserta yang Hadir
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             {attended.map((p) => (
               <ParticipantCard key={p.id} participant={p} />
             ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-5">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
             Hasil Pembahasan Agenda
           </h3>
           <div className="space-y-4">
@@ -1612,8 +1675,8 @@ export default function MeetingsPage() {
         </div>
 
         {followUps.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-yellow-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-2xl shadow-sm border border-yellow-100 p-5">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-yellow-500" />
               Agenda yang Perlu Tindak Lanjut
             </h3>
@@ -1640,24 +1703,35 @@ export default function MeetingsPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {editingNotes ? "Notulensi Meeting (Edit)" : "Notulensi Meeting"}
-          </h3>
+        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+              {editingNotes ? "Notulensi Meeting (Edit)" : "Notulensi Meeting"}
+            </h3>
+            {editingNotes && (
+              <button
+                onClick={saveNotes}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 text-white hover:bg-green-700"
+              >
+                Simpan Notulensi
+              </button>
+            )}
+          </div>
           {editingNotes ? (
             <>
               <textarea
                 value={localNotes}
-                onChange={(e) => saveNotesDebounced(e.target.value)}
+                onChange={(e) => setLocalNotes(e.target.value)}
+                onBlur={saveNotes}
                 placeholder="Tulis notulensi lengkap meeting di sini..."
-                className="w-full h-40 p-4 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder-gray-500"
+                className="w-full h-28 px-3 py-2 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-gray-900 placeholder-gray-500"
               />
               <p className="text-xs text-gray-500 mt-2">
-                Perubahan disimpan otomatis.
+                Catatan disimpan saat Anda klik “Simpan” atau keluar dari kolom.
               </p>
             </>
           ) : (
-            <div className="bg-gray-50 p-4 rounded-xl">
+            <div className="bg-gray-50 p-3.5 rounded-xl text-sm">
               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                 {selectedMeeting.notes || "Belum ada notulensi."}
               </p>
@@ -1797,7 +1871,7 @@ export default function MeetingsPage() {
 
     return (
       <div className="space-y-4">
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 mb-2">
           Daftar agenda yang memerlukan tindak lanjut dari meeting yang telah
           selesai.
         </p>
@@ -1809,7 +1883,7 @@ export default function MeetingsPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4 max-h-96 overflow-y-auto">
+          <div className="space-y-3.5 max-h-96 overflow-y-auto">
             {follow.map((item, index) => (
               <div
                 key={`${item.id}-${index}`}
@@ -1836,10 +1910,10 @@ export default function MeetingsPage() {
             ))}
           </div>
         )}
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-2">
           <button
             onClick={() => setShowFollowUpModal(false)}
-            className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-colors"
+            className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-colors text-sm"
           >
             Tutup
           </button>
@@ -1848,50 +1922,55 @@ export default function MeetingsPage() {
     );
   };
 
-  /* ===== Create/Edit handlers (commit dari draft lokal) ===== */
+  /* ===== Create/Edit handlers ===== */
   const resetDraft: CreateDraft = {
     title: "",
     date: "",
     time: "",
-    agenda: [{ id: makeId(), title: "" }],
+    agenda: [{ id: makeId(), title: "", completed: false }],
     participants: [],
   };
+  const [newMeeting, setNewMeeting] = useState<CreateDraft>(resetDraft);
 
-  const handleCreateMeeting = (draft: CreateDraft | Meeting) => {
-    const d = draft as CreateDraft;
-    const meeting: Meeting = {
-      id: (meetings.at(-1)?.id ?? 0) + 1,
-      title: d.title.trim(),
-      date: d.date,
-      time: d.time,
-      status: "scheduled",
-      participants: d.participants.map((p) => ({
+  const handleCreateMeeting = () => {
+    if (!newMeeting.title || !newMeeting.date || !newMeeting.time) return;
+    const participants: Participant[] = (newMeeting.participants || []).map(
+      (p) => ({
         id: p.id,
         name: p.name.trim(),
         department: p.department,
         avatar: initials(p.name),
-      })),
+      })
+    );
+    const agenda: AgendaItem[] = newMeeting.agenda
+      .map((a: any) => ({ ...a, title: (a.title ?? "").trim() }))
+      .filter((a: any) => a.title);
+    const meeting: Meeting = {
+      id: (meetings.at(-1)?.id ?? 0) + 1,
+      title: newMeeting.title.trim(),
+      date: newMeeting.date,
+      time: newMeeting.time,
+      status: "scheduled",
+      participants,
       notes: "",
-      agenda: d.agenda.map((a: any) => ({
-        ...a,
-        title: (a.title ?? "").trim(),
-      })),
+      agenda,
     };
     setMeetings((prev) => [...prev, meeting]);
     setShowCreateForm(false);
+    setNewMeeting(resetDraft);
   };
 
-  const handleSaveEditedMeeting = (draft: CreateDraft | Meeting) => {
-    const d = draft as Meeting;
+  const handleSaveEditedMeeting = () => {
+    if (!editingMeeting) return;
     const updated: Meeting = {
-      ...d,
-      participants: (d.participants || [])
+      ...editingMeeting,
+      participants: (editingMeeting.participants || [])
         .map((p) => {
           const name = (p.name ?? "").trim();
           return { ...p, name, avatar: initials(name) };
         })
         .filter((p) => p.name),
-      agenda: (d.agenda || [])
+      agenda: (editingMeeting.agenda || [])
         .map((a) => ({ ...a, title: (a.title ?? "").trim() }))
         .filter((a) => a.title),
     };
@@ -1913,9 +1992,9 @@ export default function MeetingsPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-green-50 via-yellow-50 to-green-100 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      {/* Open from ?id — wrapped in Suspense to avoid CSR bailout */}
-      <Suspense fallback={null}>
-        <OpenFromQuery meetings={meetings} onOpen={openFromQuery} />
+      {/* Suspense bridge untuk useSearchParams */}
+      <Suspense>
+        <SearchParamsBridge onOpenById={openById} />
       </Suspense>
 
       {isMobile && (
@@ -1924,9 +2003,7 @@ export default function MeetingsPage() {
             <div className="flex items-center gap-3">
               {currentView !== "list" && (
                 <button
-                  onClick={() => (
-                    setCurrentView("list"), setSelectedMeeting(null)
-                  )}
+                  onClick={goToList}
                   className="p-2 hover:bg-green-100 rounded-lg transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5 text-gray-900" />
@@ -1949,7 +2026,7 @@ export default function MeetingsPage() {
         {!isMobile && currentView !== "list" && (
           <div className="flex items-center gap-4 mb-6">
             <button
-              onClick={() => (setCurrentView("list"), setSelectedMeeting(null))}
+              onClick={goToList}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 text-gray-900" />
@@ -1967,13 +2044,19 @@ export default function MeetingsPage() {
       {showCreateForm && (
         <Modal
           title="Buat Meeting Baru"
-          onClose={() => setShowCreateForm(false)}
+          onClose={() => {
+            setShowCreateForm(false);
+            setNewMeeting(resetDraft);
+          }}
         >
           <MeetingForm
-            initial={resetDraft}
-            mode="create"
-            onSubmit={handleCreateMeeting}
-            onCancel={() => setShowCreateForm(false)}
+            meeting={newMeeting}
+            isCreate={true}
+            onSave={handleCreateMeeting}
+            onCancel={() => {
+              setShowCreateForm(false);
+              setNewMeeting(resetDraft);
+            }}
           />
         </Modal>
       )}
@@ -1987,9 +2070,9 @@ export default function MeetingsPage() {
           }}
         >
           <MeetingForm
-            initial={editingMeeting}
-            mode="edit"
-            onSubmit={handleSaveEditedMeeting}
+            meeting={editingMeeting}
+            isCreate={false}
+            onSave={handleSaveEditedMeeting}
             onCancel={() => {
               setShowEditForm(false);
               setEditingMeeting(null);
