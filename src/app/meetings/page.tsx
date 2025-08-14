@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Users,
   Plus,
@@ -17,10 +17,10 @@ import {
   ChevronRight,
   Eye,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
-/* Types */
+/* ========= Types ========= */
 type MeetingStatus = "scheduled" | "ongoing" | "completed";
-
 interface Participant {
   id: string | number;
   name: string;
@@ -40,8 +40,8 @@ interface AgendaItem {
 interface Meeting {
   id: number;
   title: string;
-  date: string;
-  time: string;
+  date: string; // YYYY-MM-DD
+  time: string; // "HH:mm - HH:mm" / "HH:mm"
   status: MeetingStatus;
   participants: Participant[];
   notes: string;
@@ -51,7 +51,15 @@ interface Meeting {
   endTime?: string;
 }
 
-/* Utils */
+type CreateDraft = {
+  title: string;
+  date: string;
+  time: string;
+  agenda: { id: string; title: string; completed: boolean }[];
+  participants: Participant[];
+};
+
+/* ========= Utils ========= */
 const initials = (name: string) =>
   name
     .trim()
@@ -80,7 +88,16 @@ const makeId = () =>
 
 const startOfRange = (s: string) => s?.split("-")[0]?.trim() ?? "";
 
-/* Status badge config + component */
+/* ========= Master Data ========= */
+const DEPARTMENTS: Record<string, string[]> = {
+  "Teknologi Informasi": ["Azmi", "Abdul", "Rehan", "Radya"],
+  "Pengadaan Jasa & Barang": ["Moses", "Krisna"],
+  Keuangan: ["Nova", "Luna", "Rine"],
+};
+
+const LOGO_URL = "/Logo_kujang.jpg";
+
+/* ========= Status Badge ========= */
 const statusConfig: Record<
   MeetingStatus,
   { text: string; tone: string; icon: React.ComponentType<any> }
@@ -115,14 +132,7 @@ const StatusBadge = ({ status }: { status: MeetingStatus }) => {
   );
 };
 
-/* Departments master */
-const DEPARTMENTS: Record<string, string[]> = {
-  "Teknologi Informasi": ["Azmi", "Abdul", "Rehan", "Radya"],
-  "Pengadaan Jasa & Barang": ["Moses", "Krisna"],
-  Keuangan: ["Nova", "Luna", "Rine"],
-};
-
-/* UI Primitives */
+/* ========= Primitives ========= */
 const Modal = ({
   title,
   onClose,
@@ -154,56 +164,27 @@ const Modal = ({
   </div>
 );
 
-const StatCard = ({
-  icon,
-  value,
-  label,
-  sublabel,
-  tone,
+const CTAButton = ({
   onClick,
+  children = "Buat Meeting Baru",
 }: {
-  icon: React.ReactNode;
-  value: React.ReactNode;
-  label: string;
-  sublabel?: string;
-  tone?: "blue" | "yellow" | "green" | "purple";
-  onClick?: () => void;
-}) => {
-  const toneClasses: Record<string, string> = {
-    blue: "from-blue-100 to-blue-200 text-blue-600",
-    yellow: "from-yellow-100 to-yellow-200 text-yellow-600",
-    green: "from-green-100 to-green-200 text-green-600",
-    purple: "from-purple-100 to-purple-200 text-purple-600",
-  };
-
-  return (
-    <div
-      className={`bg-white rounded-2xl shadow-sm border border-green-100 p-6 ${
-        onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""
-      }`}
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <div
-          className={`p-3 bg-gradient-to-r rounded-xl ${
-            tone ? toneClasses[tone] : ""
-          }`}
-        >
-          {icon}
-        </div>
-        <span
-          className={`text-2xl font-bold ${
-            tone ? toneClasses[tone]?.split(" ").at(-1) : "text-gray-900"
-          }`}
-        >
-          {value}
-        </span>
-      </div>
-      <h3 className="font-medium text-gray-900 text-sm">{label}</h3>
-      {sublabel && <p className="text-xs text-gray-500 mt-1">{sublabel}</p>}
-    </div>
-  );
-};
+  onClick: () => void;
+  children?: React.ReactNode;
+}) => (
+  <button
+    onClick={onClick}
+    className="relative inline-flex items-center gap-3 rounded-2xl px-5 sm:px-6 py-3 sm:py-3.5
+               bg-gradient-to-r from-emerald-500 via-green-500 to-yellow-500 text-white font-semibold
+               shadow-[0_8px_20px_rgba(16,185,129,.35)]
+               transition-all hover:shadow-[0_12px_26px_rgba(16,185,129,.45)]
+               hover:-translate-y-0.5 active:translate-y-0"
+  >
+    <span className="grid place-items-center w-7 h-7 rounded-xl bg-white/15 backdrop-blur-sm ring-1 ring-white/30">
+      <Plus className="w-4 h-4" />
+    </span>
+    <span>{children}</span>
+  </button>
+);
 
 const ProgressIndicator = ({
   currentStep,
@@ -259,7 +240,7 @@ const ParticipantCard = ({ participant }: { participant: Participant }) => (
   </div>
 );
 
-/* MeetingCard: responsive & action buttons wrap */
+/* ========= Meeting Card ========= */
 const MeetingCard = ({
   meeting,
   onOpen,
@@ -280,11 +261,11 @@ const MeetingCard = ({
 
   return (
     <div
+      id={`meeting-${meeting.id}`}
       className="group relative p-4 sm:p-5 hover:bg-gradient-to-r from-green-50/60 to-yellow-50/40 transition"
       onClick={onOpen}
     >
       <div className="pointer-events-none absolute inset-y-0 left-0 w-1 rounded-r bg-gradient-to-b from-green-400 to-yellow-400 opacity-60" />
-
       <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -297,7 +278,6 @@ const MeetingCard = ({
               </span>
             )}
           </div>
-
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
@@ -312,7 +292,6 @@ const MeetingCard = ({
               {meeting.participants.length} peserta
             </span>
           </div>
-
           <div className="mt-3 w-full">
             <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
               <div
@@ -324,7 +303,6 @@ const MeetingCard = ({
               {done}/{total} agenda selesai
             </div>
           </div>
-
           <div className="mt-3">
             <div className="flex -space-x-2 items-center">
               {meeting.participants.slice(0, 3).map((p) => (
@@ -347,7 +325,6 @@ const MeetingCard = ({
 
         <div className="flex flex-col md:items-end gap-2">
           <StatusBadge status={meeting.status} />
-
           <div
             className="flex flex-wrap items-center gap-2 md:opacity-0 md:translate-y-1 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all"
             onClick={(e) => e.stopPropagation()}
@@ -389,7 +366,7 @@ const MeetingCard = ({
   );
 };
 
-/* Page */
+/* ========= Page ========= */
 export default function MeetingsPage() {
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [currentView, setCurrentView] = useState<
@@ -401,25 +378,11 @@ export default function MeetingsPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
 
-  /* Create draft */
-  type CreateDraft = {
-    title: string;
-    date: string;
-    time: string;
-    agenda: { id: string; title: string; completed: boolean }[];
-    participants: Participant[];
-  };
+  type FilterKey = "all" | "today" | "upcoming" | "ongoing" | "completed";
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [query, setQuery] = useState("");
 
-  const resetDraft: CreateDraft = {
-    title: "",
-    date: "",
-    time: "",
-    agenda: [{ id: makeId(), title: "", completed: false }],
-    participants: [],
-  };
-
-  const [newMeeting, setNewMeeting] = useState<CreateDraft>(resetDraft);
-
+  // responsive
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023px)");
     setIsMobile(mq.matches);
@@ -428,7 +391,7 @@ export default function MeetingsPage() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  /* Seed */
+  /* ===== Seed data pakai DEPARTMENTS ===== */
   const [meetings, setMeetings] = useState<Meeting[]>([
     {
       id: 1,
@@ -438,24 +401,24 @@ export default function MeetingsPage() {
       status: "completed",
       participants: [
         {
-          id: 1,
-          name: "Ahmad Rizki",
-          role: "Production Manager",
-          avatar: "AR",
+          id: "TI:Azmi",
+          name: "Azmi",
+          department: "Teknologi Informasi",
+          avatar: initials("Azmi"),
           attended: true,
         },
         {
-          id: 2,
-          name: "Siti Nurhaliza",
-          role: "Quality Control",
-          avatar: "SN",
+          id: "KEU:Nova",
+          name: "Nova",
+          department: "Keuangan",
+          avatar: initials("Nova"),
           attended: true,
         },
         {
-          id: 3,
-          name: "Budi Santoso",
-          role: "Supervisor",
-          avatar: "BS",
+          id: "PJB:Krisna",
+          name: "Krisna",
+          department: "Pengadaan Jasa & Barang",
+          avatar: initials("Krisna"),
           attended: false,
         },
       ],
@@ -499,8 +462,18 @@ export default function MeetingsPage() {
       time: "14:00 - 15:00",
       status: "scheduled",
       participants: [
-        { id: 4, name: "Indra Wijaya", role: "Safety Officer", avatar: "IW" },
-        { id: 5, name: "Maya Sari", role: "HR Manager", avatar: "MS" },
+        {
+          id: "PJB:Moses",
+          name: "Moses",
+          department: "Pengadaan Jasa & Barang",
+          avatar: initials("Moses"),
+        },
+        {
+          id: "KEU:Luna",
+          name: "Luna",
+          department: "Keuangan",
+          avatar: initials("Luna"),
+        },
       ],
       notes: "",
       agenda: [
@@ -517,24 +490,24 @@ export default function MeetingsPage() {
       status: "ongoing",
       participants: [
         {
-          id: 6,
-          name: "Dewi Permata",
-          role: "CEO",
-          avatar: "DP",
+          id: "TI:Abdul",
+          name: "Abdul",
+          department: "Teknologi Informasi",
+          avatar: initials("Abdul"),
           attended: true,
         },
         {
-          id: 7,
-          name: "Riko Pratama",
-          role: "CFO",
-          avatar: "RP",
+          id: "TI:Rehan",
+          name: "Rehan",
+          department: "Teknologi Informasi",
+          avatar: initials("Rehan"),
           attended: true,
         },
         {
-          id: 8,
-          name: "Linda Sari",
-          role: "COO",
-          avatar: "LS",
+          id: "KEU:Rine",
+          name: "Rine",
+          department: "Keuangan",
+          avatar: initials("Rine"),
           attended: true,
         },
       ],
@@ -554,22 +527,90 @@ export default function MeetingsPage() {
   ]);
 
   const today = localISODate();
-  const stats = useMemo(() => {
-    const todayCount = meetings.filter((m) => m.date === today).length;
-    const upcoming = meetings.filter(
-      (m) => new Date(m.date) > new Date(today) && m.status === "scheduled"
-    ).length;
-    const ongoing = meetings.filter((m) => m.status === "ongoing").length;
-    const completedNotes = meetings.filter(
-      (m) => m.status === "completed" && Boolean(m.notes?.trim())
-    ).length;
-    const followUps = meetings
-      .filter((m) => m.status === "completed")
-      .flatMap((m) => m.agenda.filter((a) => a.needsFollowUp)).length;
-    return { todayCount, upcoming, ongoing, completedNotes, followUps };
-  }, [meetings, today]);
 
-  /* Handlers */
+  // derived for strip
+  const liveMeeting = useMemo(
+    () => meetings.find((m) => m.status === "ongoing"),
+    [meetings]
+  );
+  const nextMeeting = useMemo(() => {
+    const upcoming = meetings
+      .filter(
+        (m) => m.status === "scheduled" && new Date(m.date) >= new Date(today)
+      )
+      .sort((a, b) => +new Date(a.date) - +new Date(b.date));
+    return upcoming[0];
+  }, [meetings, today]);
+  const followUpsCount = useMemo(
+    () =>
+      meetings
+        .filter((m) => m.status === "completed")
+        .flatMap((m) => m.agenda.filter((a) => a.needsFollowUp)).length,
+    [meetings]
+  );
+
+  // filter & search
+  const filteredMeetings = useMemo(() => {
+    let list = [...meetings];
+    if (filter === "today") list = list.filter((m) => m.date === today);
+    if (filter === "upcoming")
+      list = list.filter(
+        (m) => m.status === "scheduled" && new Date(m.date) >= new Date(today)
+      );
+    if (filter === "ongoing") list = list.filter((m) => m.status === "ongoing");
+    if (filter === "completed")
+      list = list.filter((m) => m.status === "completed");
+    if (query.trim())
+      list = list.filter((m) =>
+        m.title.toLowerCase().includes(query.toLowerCase())
+      );
+    list.sort((a, b) => {
+      if (a.status === "ongoing" && b.status !== "ongoing") return -1;
+      if (b.status === "ongoing" && a.status !== "ongoing") return 1;
+      return +new Date(a.date) - +new Date(b.date);
+    });
+    return list;
+  }, [meetings, filter, query, today]);
+
+  /* ===== Read ?id= from URL to open the meeting directly ===== */
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id) return;
+
+    const target =
+      meetings.find((m) => String(m.id) === id) ||
+      meetings.find((m) => m.status === "ongoing");
+
+    if (!target) return;
+
+    setSelectedMeeting(target);
+    setCurrentView(
+      target.status === "ongoing"
+        ? "ongoing"
+        : target.status === "completed"
+        ? "completed"
+        : "detail"
+    );
+  }, [searchParams, meetings]);
+
+  // Optional: if still on list view, scroll-highlight card
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id || selectedMeeting) return;
+    const el = document.getElementById(`meeting-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-2", "ring-yellow-400", "animate-pulse");
+    const t = window.setTimeout(() => {
+      el.classList.remove("ring-2", "ring-yellow-400", "animate-pulse");
+    }, 1500);
+    return () => {
+      window.clearTimeout(t);
+    };
+  }, [searchParams, selectedMeeting]);
+
+  /* ===== Handlers ===== */
   const handleMeetingSelect = (meeting: Meeting) => {
     setSelectedMeeting(meeting);
     setCurrentView(
@@ -582,7 +623,7 @@ export default function MeetingsPage() {
   };
 
   const handleStartMeeting = (meeting: Meeting) => {
-    const updatedMeeting = {
+    const updated = {
       ...meeting,
       status: "ongoing" as MeetingStatus,
       startTime: new Date().toLocaleTimeString("id-ID", {
@@ -590,16 +631,14 @@ export default function MeetingsPage() {
         minute: "2-digit",
       }),
     };
-    setMeetings((prev) =>
-      prev.map((m) => (m.id === meeting.id ? updatedMeeting : m))
-    );
-    setSelectedMeeting(updatedMeeting);
+    setMeetings((prev) => prev.map((m) => (m.id === meeting.id ? updated : m)));
+    setSelectedMeeting(updated);
     setCurrentView("ongoing");
   };
 
   const handleCompleteMeeting = () => {
     if (!selectedMeeting) return;
-    const completedMeeting = {
+    const updated = {
       ...selectedMeeting,
       status: "completed" as MeetingStatus,
       endTime: new Date().toLocaleTimeString("id-ID", {
@@ -607,142 +646,185 @@ export default function MeetingsPage() {
         minute: "2-digit",
       }),
     };
-    setMeetings((prev) =>
-      prev.map((m) => (m.id === completedMeeting.id ? completedMeeting : m))
-    );
-    setSelectedMeeting(completedMeeting);
+    setMeetings((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+    setSelectedMeeting(updated);
     setCurrentView("completed");
   };
 
-  /* Export PDF (auto print) */
-  const exportToPDF = () => {
-    if (!selectedMeeting) return;
-    const attendedParticipants = selectedMeeting.participants.filter(
-      (p) => p.attended
-    );
-    const completedAgenda = selectedMeeting.agenda.filter((a) => a.completed);
-    const followUpAgenda = selectedMeeting.agenda.filter(
-      (a) => a.needsFollowUp
-    );
+  /* ===== Export PDF + logo center ===== */
+  async function toDataURL(url: string): Promise<string> {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      const blob = await res.blob();
+      return await new Promise<string>((resolve) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.readAsDataURL(blob);
+      });
+    } catch {
+      return "";
+    }
+  }
 
+  const exportToPDF = async () => {
+    if (!selectedMeeting) return;
+    const m = selectedMeeting;
+    const attended = m.participants.filter((p) => p.attended);
+    const doneAgendas = m.agenda.filter((a) => a.completed);
+    const followUps = m.agenda.filter((a) => a.needsFollowUp);
+    const dateStr = fmtDateID(m.date);
+
+    const logoData = await toDataURL(LOGO_URL);
     const w = window.open("", "_blank");
     if (!w) return;
 
     w.document.write(`
-      <!DOCTYPE html><html><head><meta charset="UTF-8">
-        <title>Notulensi - ${selectedMeeting.title}</title>
-        <style>
-          @page { size: A4; margin: 2cm; }
-          body { font-family: Arial, sans-serif; color:#111; }
-          .hline { height:2px; background:#111; margin: 20px 0 10px; }
-          .title { font-size:26px; font-weight:800; letter-spacing:1px; text-align:center; margin-top:4px; }
-          .subtitle { text-align:center; color:#444; margin-top:6px; }
-          .section { margin: 24px 0 12px; }
-          .sec-hd { font-weight:800; font-size:18px; letter-spacing: .4px; border-bottom: 2px solid #111; padding-bottom:8px; display:flex; align-items:center; gap:8px;}
-          .bar { width:6px; height:20px; background:#111; display:inline-block; }
-          ul { margin:6px 0 0 22px; }
-          li { margin:3px 0; }
-          .agenda-item { margin:8px 0; }
-          .muted { color:#666; font-size:12px; text-align:center; margin-top:32px; }
-        </style>
-      </head>
-      <body>
-        <div class="title">NOTULENSI RAPAT</div>
-        <div class="subtitle">${selectedMeeting.title}</div>
-        <div class="subtitle">${fmtDateID(selectedMeeting.date)} | ${
-      selectedMeeting.startTime || selectedMeeting.time
-    } - ${selectedMeeting.endTime || "Belum selesai"}</div>
-        <div class="hline"></div>
+<!DOCTYPE html><html><head><meta charset="UTF-8" />
+<title>Notulensi - ${m.title}</title>
+<style>
+  :root{ --fg:#111; --muted:#666; --line:#222; }
+  html,body{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  @page{ size:A4; margin: 18mm 16mm; }
+  body{ font: 12.5px/1.55 Arial, Helvetica, sans-serif; color:var(--fg); }
+  .brand{ display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; }
+  .brand .logo img{ height:56px; width:auto; display:block; }
+  .brand .title{ margin:0; font-size:24px; font-weight:800; letter-spacing:.2px; }
+  .brand .subtitle{ margin:2px 0 0 0; color:#444; }
+  .brand .meta{ color:#555; margin-top:2px; }
+  .rule{ height:1.5px; background: var(--fg); margin: 14px 0 12px; }
+  .section{ margin:16px 0 0; page-break-inside:avoid; }
+  .sec-title{ font-weight:800; font-size:14px; letter-spacing:.3px; border-bottom:1.5px solid var(--line); padding-bottom:6px; margin:0 0 8px; }
+  ul{ margin:6px 0 0 18px; padding:0; } ul li{ margin:3px 0; }
+  ol.agenda{ margin:6px 0 0 18px; padding:0; } ol.agenda>li{ margin:6px 0; }
+  table.follow{ width:100%; border-collapse:collapse; margin-top:6px; }
+  table.follow th, table.follow td{ border:1px solid #333; padding:6px 8px; vertical-align:top; }
+  table.follow th{ background:#f3f3f3; font-weight:700; text-align:left; }
+  .notes{ background:#f8f8f8; padding:10px 12px; border:1px solid #ddd; border-radius:6px; }
+  .footer{ color:var(--muted); text-align:center; margin-top:22px; font-size:11px; }
+</style>
+</head>
+<body>
+  <div class="brand">
+    ${
+      logoData
+        ? `<div class="logo"><img src="${logoData}" alt="Logo" /></div>`
+        : ""
+    }
+    <div>
+      <h1 class="title">NOTULENSI RAPAT</h1>
+      <div class="subtitle">${m.title}</div>
+      <div class="meta">${dateStr} | ${m.startTime || m.time} - ${
+      m.endTime || "Belum selesai"
+    }</div>
+    </div>
+  </div>
+  <div class="rule"></div>
 
-        <div class="section">
-          <div class="sec-hd"><span class="bar"></span>PESERTA HADIR</div>
-          ${
-            attendedParticipants.length
-              ? `<ul>${attendedParticipants
-                  .map((p) => `<li>${p.name} (${p.department ?? "-"})</li>`)
-                  .join("")}</ul>`
-              : `<div>• Belum ada peserta yang hadir</div>`
-          }
-        </div>
+  <div class="section">
+    <div class="sec-title">PESERTA HADIR</div>
+    ${
+      attended.length
+        ? `<ul>${attended
+            .map((p) => `<li>${p.name} (${p.department ?? "-"})</li>`)
+            .join("")}</ul>`
+        : `<div>• Belum ada peserta yang hadir</div>`
+    }
+  </div>
 
-        <div class="section">
-          <div class="sec-hd"><span class="bar"></span>AGENDA YANG DIBAHAS</div>
-          ${
-            completedAgenda.length
-              ? completedAgenda
-                  .map(
-                    (a, i) =>
-                      `<div class="agenda-item"><div>${i + 1}. ${
-                        a.title
-                      }</div><div>Hasil: ${
-                        a.notes || "Tidak ada catatan khusus."
-                      }</div></div>`
-                  )
-                  .join("")
-              : `<div>Belum ada agenda yang diselesaikan</div>`
-          }
-        </div>
+  <div class="section">
+    <div class="sec-title">AGENDA YANG DIBAHAS</div>
+    ${
+      doneAgendas.length
+        ? `<ol class="agenda">${doneAgendas
+            .map(
+              (a) =>
+                `<li><div>${a.title}</div><div><b>Hasil:</b> ${
+                  a.notes || "Tidak ada catatan khusus."
+                }</div></li>`
+            )
+            .join("")}</ol>`
+        : `<div>Belum ada agenda yang diselesaikan</div>`
+    }
+  </div>
 
-        ${
-          followUpAgenda.length
-            ? `<div class="section">
-                 <div class="sec-hd"><span class="bar"></span>TINDAK LANJUT</div>
-                 ${followUpAgenda
-                   .map(
-                     (a, i) =>
-                       `<div class="agenda-item"><div>${i + 1}. ${
-                         a.title
-                       }</div><div>Target: ${
-                         a.followUpDate ? fmtDateID(a.followUpDate) : "TBD"
-                       }</div><div>Catatan: ${
-                         a.notes || "Perlu pembahasan lebih lanjut"
-                       }</div></div>`
-                   )
-                   .join("")}
-               </div>`
-            : ""
-        }
+  ${
+    followUps.length
+      ? `<div class="section">
+           <div class="sec-title">TINDAK LANJUT</div>
+           <table class="follow">
+             <thead><tr><th style="width:32px;">No</th><th>Agenda</th><th style="width:140px;">Target</th><th>Catatan</th></tr></thead>
+             <tbody>
+               ${followUps
+                 .map(
+                   (a, i) =>
+                     `<tr>
+                        <td>${i + 1}</td>
+                        <td>${a.title}</td>
+                        <td>${
+                          a.followUpDate
+                            ? new Date(a.followUpDate).toLocaleDateString(
+                                "id-ID",
+                                {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                }
+                              )
+                            : "TBD"
+                        }</td>
+                        <td>${a.notes || "-"}</td>
+                      </tr>`
+                 )
+                 .join("")}
+             </tbody>
+           </table>
+         </div>`
+      : ""
+  }
 
-        ${
-          selectedMeeting.notes
-            ? `<div class="section">
-                 <div class="sec-hd"><span class="bar"></span>CATATAN UMUM & NOTULENSI</div>
-                 <div>${selectedMeeting.notes.replace(/\n/g, "<br/>")}</div>
-               </div>`
-            : ""
-        }
+  ${
+    m.notes
+      ? `<div class="section"><div class="sec-title">CATATAN UMUM & NOTULENSI</div><div class="notes">${m.notes.replace(
+          /\n/g,
+          "<br/>"
+        )}</div></div>`
+      : ""
+  }
 
-        <div class="muted">Dokumen ini dibuat otomatis pada ${new Date().toLocaleDateString(
-          "id-ID",
-          {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }
-        )}</div>
+  <div class="footer">
+    Dokumen ini dibuat otomatis pada ${new Date().toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })}
+  </div>
 
-        <script>
-          window.addEventListener('load', function(){
-            window.print();
-            setTimeout(function(){ window.close(); }, 300);
-          });
-        </script>
-      </body></html>
-    `);
+  <script>
+    window.addEventListener('load', function(){
+      setTimeout(function(){ window.print(); setTimeout(function(){ window.close(); }, 300); }, 80);
+    });
+  </script>
+</body></html>`);
     w.document.close();
     w.focus();
   };
 
-  /* Form primitives */
+  /* ===== Form helpers ===== */
   const FormInput = ({
     type,
     value,
     onChange,
     placeholder,
     className = "",
-  }: any) => (
+  }: {
+    type: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    placeholder?: string;
+    className?: string;
+  }) => (
     <input
       type={type}
       value={value}
@@ -753,8 +835,31 @@ export default function MeetingsPage() {
     />
   );
 
-  /* Participant selector (rows) */
   type ParticipantRow = { id: string; department: string; name: string };
+  const rowsToParticipants = (rows: ParticipantRow[]): Participant[] =>
+    rows
+      .filter((r) => r.department && r.name)
+      .map((r) => ({
+        id: `${r.department}:${r.name}`,
+        name: r.name,
+        department: r.department,
+        avatar: initials(r.name),
+      }));
+
+  const participantsToRows = (parts: Participant[]): ParticipantRow[] =>
+    (parts || []).map((p) => {
+      let dep = p.department || "";
+      if (!dep)
+        dep =
+          Object.keys(DEPARTMENTS).find((d) =>
+            DEPARTMENTS[d].includes(p.name)
+          ) || "";
+      return {
+        id: String(p.id ?? makeId()),
+        department: dep,
+        name: p.name || "",
+      };
+    });
 
   function ParticipantSelectRow({
     row,
@@ -768,15 +873,14 @@ export default function MeetingsPage() {
     onRemove: () => void;
   }) {
     const depOptions = Object.keys(DEPARTMENTS);
-    const usedNames = new Set(
+    const used = new Set(
       allRows
         .filter((r) => r.id !== row.id)
         .map((r) => `${r.department}::${r.name}`)
     );
-
     const nameOptions = row.department
       ? (DEPARTMENTS[row.department] || []).filter(
-          (n) => !usedNames.has(`${row.department}::${n}`)
+          (n) => !used.has(`${row.department}::${n}`)
         )
       : [];
 
@@ -794,7 +898,6 @@ export default function MeetingsPage() {
             </option>
           ))}
         </select>
-
         <select
           value={row.name}
           onChange={(e) => onChange({ name: e.target.value })}
@@ -810,7 +913,6 @@ export default function MeetingsPage() {
             </option>
           ))}
         </select>
-
         <button
           type="button"
           onClick={onRemove}
@@ -831,15 +933,12 @@ export default function MeetingsPage() {
     onRowsChange: (next: ParticipantRow[]) => void;
     title?: string;
   }) {
-    const addRow = () => {
+    const addRow = () =>
       onRowsChange([...rows, { id: makeId(), department: "", name: "" }]);
-    };
-    const updateRow = (id: string, patch: Partial<ParticipantRow>) => {
+    const updateRow = (id: string, patch: Partial<ParticipantRow>) =>
       onRowsChange(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-    };
-    const removeRow = (id: string) => {
+    const removeRow = (id: string) =>
       onRowsChange(rows.filter((r) => r.id !== id));
-    };
 
     return (
       <section>
@@ -853,7 +952,6 @@ export default function MeetingsPage() {
             <Plus className="w-4 h-4" /> Tambah
           </button>
         </div>
-
         {rows.length === 0 ? (
           <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
             Belum ada peserta. Klik <b>Tambah</b> untuk menambah baris.
@@ -875,38 +973,41 @@ export default function MeetingsPage() {
     );
   }
 
-  const AgendaForm = ({ agenda, onUpdate, onAdd, onRemove }: any) => (
+  const AgendaForm = ({
+    agenda,
+    onUpdate,
+    onAdd,
+    onRemove,
+  }: {
+    agenda: { id: string; title: string }[];
+    onUpdate: (id: string | number, value: string) => void;
+    onAdd: () => void;
+    onRemove: (id: string | number) => void;
+  }) => (
     <section>
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-base font-medium text-gray-900">Agenda</h4>
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            onAdd();
-          }}
+          onClick={(e) => (e.preventDefault(), onAdd())}
           className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"
         >
-          <Plus className="w-4 h-4" />
-          Tambah
+          <Plus className="w-4 h-4" /> Tambah
         </button>
       </div>
       <div className="space-y-3">
-        {agenda.map((item: any, i: number) => (
+        {agenda.map((item, i) => (
           <div key={item.id} className="flex gap-3">
             <FormInput
               type="text"
               placeholder={`Agenda ${i + 1}`}
               value={item.title ?? ""}
-              onChange={(e: any) => onUpdate(item.id, e.target.value)}
+              onChange={(e) => onUpdate(item.id, e.target.value)}
               className="flex-1"
             />
             <button
               type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                onRemove(item.id);
-              }}
+              onClick={(e) => (e.preventDefault(), onRemove(item.id))}
               disabled={agenda.length === 1}
               className="px-3 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white rounded-lg text-sm disabled:cursor-not-allowed flex items-center justify-center"
             >
@@ -918,296 +1019,286 @@ export default function MeetingsPage() {
     </section>
   );
 
-  // Row <-> participants
-  function rowsToParticipants(rows: ParticipantRow[]): Participant[] {
-    return rows
-      .filter((r) => r.department && r.name)
-      .map((r) => ({
-        id: `${r.department}:${r.name}`,
-        name: r.name,
-        department: r.department,
-        avatar: initials(r.name),
-      }));
-  }
-  function participantsToRows(parts: Participant[]): ParticipantRow[] {
-    return (parts || []).map((p) => {
-      let dep = p.department || "";
-      if (!dep) {
-        dep =
-          Object.keys(DEPARTMENTS).find((d) =>
-            DEPARTMENTS[d].includes(p.name)
-          ) || "";
-      }
-      return {
-        id: String(p.id ?? makeId()),
-        department: dep,
-        name: p.name || "",
-      };
-    });
-  }
+  /* ===== Meeting Form (Create/Edit) ===== */
+  const MeetingForm = React.memo(function MeetingForm({
+    meeting,
+    isCreate,
+    onSave,
+    onCancel,
+  }: {
+    meeting: any;
+    isCreate: boolean;
+    onSave: () => void;
+    onCancel: () => void;
+  }) {
+    const m = meeting as any;
+    const [rows, setRows] = useState<ParticipantRow[]>(
+      participantsToRows(m.participants || [])
+    );
+    useEffect(() => setRows(participantsToRows(m.participants || [])), []);
 
-  const MeetingForm = React.useMemo(
-    () =>
-      React.memo(function MeetingForm({
-        meeting,
-        isCreate,
-        onSave,
-        onCancel,
-      }: any) {
-        const m = meeting as any;
+    const handleRowsChange = (next: ParticipantRow[]) => {
+      setRows(next);
+      const participants = rowsToParticipants(next);
+      if (isCreate) setNewMeeting((prev) => ({ ...prev, participants }));
+      else
+        setEditingMeeting((prev) => (prev ? { ...prev, participants } : null));
+    };
 
-        const [rows, setRows] = React.useState<ParticipantRow[]>(
-          participantsToRows(m.participants || [])
-        );
+    const [start, setStart] = useState(startOfRange(m.time));
+    useEffect(() => setStart(startOfRange(m.time)), [m.time]);
+    const updateStart = (v: string) => {
+      setStart(v);
+      if (isCreate) setNewMeeting((prev) => ({ ...prev, time: v }));
+      else setEditingMeeting((prev) => (prev ? { ...prev, time: v } : null));
+    };
 
-        React.useEffect(() => {
-          setRows(participantsToRows(m.participants || []));
-        }, []);
+    const handlers = {
+      title: (v: string) =>
+        isCreate
+          ? setNewMeeting((p) => ({ ...p, title: v }))
+          : setEditingMeeting((p) => (p ? { ...p, title: v } : null)),
+      date: (v: string) =>
+        isCreate
+          ? setNewMeeting((p) => ({ ...p, date: v }))
+          : setEditingMeeting((p) => (p ? { ...p, date: v } : null)),
+      agendaUpdate: (id: string | number, value: string) => {
+        const op = (arr: any[]) =>
+          arr.map((a) => (a.id === id ? { ...a, title: value } : a));
+        if (isCreate)
+          setNewMeeting((p: any) => ({ ...p, agenda: op(p.agenda) }));
+        else
+          setEditingMeeting((p: any) =>
+            p ? { ...p, agenda: op(p.agenda) } : null
+          );
+      },
+      agendaAdd: () => {
+        const newA = { id: makeId(), title: "", completed: false };
+        if (isCreate)
+          setNewMeeting((p: any) => ({ ...p, agenda: [...p.agenda, newA] }));
+        else
+          setEditingMeeting((p: any) =>
+            p ? { ...p, agenda: [...p.agenda, newA] } : null
+          );
+      },
+      agendaRemove: (id: string | number) => {
+        const op = (arr: any[]) => arr.filter((a) => a.id !== id);
+        if (isCreate)
+          setNewMeeting((p: any) => ({ ...p, agenda: op(p.agenda) }));
+        else
+          setEditingMeeting((p: any) =>
+            p ? { ...p, agenda: op(p.agenda) } : null
+          );
+      },
+    };
 
-        const handleRowsChange = React.useCallback(
-          (next: ParticipantRow[]) => {
-            setRows(next);
-            const participants = rowsToParticipants(next);
-            if (isCreate) {
-              setNewMeeting((prev) => ({ ...prev, participants }));
-            } else {
-              setEditingMeeting((prev) =>
-                prev ? { ...prev, participants } : null
-              );
-            }
-          },
-          [isCreate]
-        );
+    const onSubmit = (e: React.FormEvent) => (e.preventDefault(), onSave());
+    const hasBasic = !!m.title && !!m.date && !!m.time;
+    const hasParticipants = rowsToParticipants(rows).length > 0;
 
-        const [start, setStart] = React.useState(startOfRange(m.time));
-        React.useEffect(() => {
-          setStart(startOfRange(m.time));
-        }, [m.time]);
-
-        const updateStart = React.useCallback(
-          (v: string) => {
-            setStart(v);
-            if (isCreate) {
-              setNewMeeting((prev) => ({ ...prev, time: v }));
-            } else {
-              setEditingMeeting((prev) => (prev ? { ...prev, time: v } : null));
-            }
-          },
-          [isCreate]
-        );
-
-        const handlers = React.useMemo(
-          () => ({
-            title: (v: string) =>
-              isCreate
-                ? setNewMeeting((prev) => ({ ...prev, title: v }))
-                : setEditingMeeting((prev) =>
-                    prev ? { ...prev, title: v } : null
-                  ),
-            date: (v: string) =>
-              isCreate
-                ? setNewMeeting((prev) => ({ ...prev, date: v }))
-                : setEditingMeeting((prev) =>
-                    prev ? { ...prev, date: v } : null
-                  ),
-            time: (v: string) =>
-              isCreate
-                ? setNewMeeting((prev) => ({ ...prev, time: v }))
-                : setEditingMeeting((prev) =>
-                    prev ? { ...prev, time: v } : null
-                  ),
-            agendaUpdate: (id: string | number, value: string) => {
-              if (isCreate) {
-                setNewMeeting((prev) => ({
-                  ...prev,
-                  agenda: prev.agenda.map((a: any) =>
-                    a.id === id ? { ...a, title: value } : a
-                  ),
-                }));
-              } else {
-                setEditingMeeting((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        agenda: prev.agenda.map((a: any) =>
-                          a.id === id ? { ...a, title: value } : a
-                        ),
-                      }
-                    : null
-                );
-              }
-            },
-            agendaAdd: () => {
-              const newA = { id: makeId(), title: "", completed: false };
-              if (isCreate) {
-                setNewMeeting((prev) => ({
-                  ...prev,
-                  agenda: [...prev.agenda, newA],
-                }));
-              } else {
-                setEditingMeeting((prev) =>
-                  prev ? { ...prev, agenda: [...prev.agenda, newA] } : null
-                );
-              }
-            },
-            agendaRemove: (id: string | number) => {
-              if (isCreate) {
-                setNewMeeting((prev) => ({
-                  ...prev,
-                  agenda: prev.agenda.filter((a: any) => a.id !== id),
-                }));
-              } else {
-                setEditingMeeting((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        agenda: prev.agenda.filter((a: any) => a.id !== id),
-                      }
-                    : null
-                );
-              }
-            },
-          }),
-          [isCreate]
-        );
-
-        const handleFormSubmit = React.useCallback(
-          (e: React.FormEvent) => {
-            e.preventDefault();
-            onSave();
-          },
-          [onSave]
-        );
-
-        const hasBasic = !!m.title && !!m.date && !!m.time;
-        const hasParticipants = rowsToParticipants(rows).length > 0;
-
-        return (
-          <form onSubmit={handleFormSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <FormInput
-                type="text"
-                value={m.title || ""}
-                onChange={(e: any) => handlers.title(e.target.value)}
-                placeholder="Judul meeting"
+    return (
+      <form onSubmit={onSubmit} className="space-y-6">
+        <div className="space-y-4">
+          <FormInput
+            type="text"
+            value={m.title || ""}
+            onChange={(e) => handlers.title(e.target.value)}
+            placeholder="Judul meeting"
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormInput
+              type="date"
+              value={m.date || ""}
+              onChange={(e) => handlers.date(e.target.value)}
+            />
+            <div className="space-y-1">
+              <label className="text-xs text-gray-600">Jam</label>
+              <input
+                type="time"
+                value={start}
+                onChange={(e) => updateStart(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormInput
-                  type="date"
-                  value={m.date || ""}
-                  onChange={(e: any) => handlers.date(e.target.value)}
-                />
-                <div className="space-y-1">
-                  <label className="text-xs text-gray-600">Jam</label>
-                  <input
-                    type="time"
-                    value={start}
-                    onChange={(e) => updateStart(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
-                    style={{ color: "#111827" }}
-                  />
-                </div>
-              </div>
             </div>
+          </div>
+        </div>
 
-            <ParticipantsForm
-              rows={rows}
-              onRowsChange={handleRowsChange}
-              title="Peserta"
-            />
+        <ParticipantsForm rows={rows} onRowsChange={handleRowsChange} />
+        <AgendaForm
+          agenda={m.agenda || []}
+          onUpdate={handlers.agendaUpdate}
+          onAdd={handlers.agendaAdd}
+          onRemove={handlers.agendaRemove}
+        />
 
-            <AgendaForm
-              agenda={m.agenda || []}
-              onUpdate={handlers.agendaUpdate}
-              onAdd={handlers.agendaAdd}
-              onRemove={handlers.agendaRemove}
-            />
+        <div className="flex gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={!(hasBasic && hasParticipants)}
+            className={`flex-1 ${
+              isCreate
+                ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+            } disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-3 rounded-xl font-medium transition-all duration-200`}
+          >
+            {isCreate ? "Buat Meeting" : "Update Meeting"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-medium transition-colors"
+          >
+            Batal
+          </button>
+        </div>
+      </form>
+    );
+  });
 
-            <div className="flex gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={!(hasBasic && hasParticipants)}
-                className={`flex-1 ${
-                  isCreate
-                    ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                    : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-                } disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-3 rounded-xl font-medium transition-all duration-200`}
-              >
-                {isCreate ? "Buat Meeting" : "Update Meeting"}
-              </button>
-
-              <button
-                type="button"
-                onClick={onCancel}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-medium transition-colors"
-              >
-                Batal
-              </button>
+  /* ===== Views ===== */
+  const PriorityStrip = () => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+      {/* LIVE */}
+      <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-100">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-yellow-200/70 grid place-items-center">
+            <PlayCircle className="w-5 h-5 text-yellow-700" />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-yellow-800">
+              Berlangsung
             </div>
-          </form>
-        );
-      }),
-    []
-  );
-
-  /* Views */
-  const ListView = () => (
-    <>
-      {/* stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-6 mb-6 lg:mb-8">
-        <StatCard
-          icon={<Calendar className="w-6 h-6" />}
-          value={stats.todayCount}
-          label="Meeting Hari Ini"
-          sublabel={new Date().toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "short",
-          })}
-          tone="blue"
-        />
-        <StatCard
-          icon={<PlayCircle className="w-6 h-6" />}
-          value={stats.ongoing}
-          label="Berlangsung"
-          sublabel="Live"
-          tone="yellow"
-        />
-        <StatCard
-          icon={<Clock className="w-6 h-6" />}
-          value={stats.upcoming}
-          label="Terjadwal"
-          sublabel="Mendatang"
-          tone="purple"
-        />
-        <StatCard
-          icon={<FileText className="w-6 h-6" />}
-          value={stats.completedNotes}
-          label="Selesai"
-          sublabel="Dengan Notulensi"
-          tone="green"
-        />
-        <StatCard
-          icon={<AlertCircle className="w-6 h-6" />}
-          value={stats.followUps}
-          label="Tindak Lanjut"
-          sublabel="Perlu Follow-up"
-          tone="yellow"
-          onClick={() => setShowFollowUpModal(true)}
-        />
+            <div className="text-xs text-yellow-700">
+              {liveMeeting ? liveMeeting.title : "Tidak ada meeting live"}
+            </div>
+          </div>
+        </div>
+        <button
+          disabled={!liveMeeting}
+          onClick={() => liveMeeting && handleMeetingSelect(liveMeeting)}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
+            liveMeeting
+              ? "bg-white text-yellow-700 border-yellow-200 hover:bg-yellow-50"
+              : "bg-white text-yellow-400 border-yellow-100 cursor-not-allowed"
+          }`}
+        >
+          {liveMeeting ? "Lanjut" : "—"}
+        </button>
       </div>
 
-      {/* daftar meeting */}
-      <div className="bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between p-5 border-b border-green-100">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Daftar Meeting
-          </h2>
+      {/* FOLLOW UP */}
+      <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-emerald-200/70 grid place-items-center">
+            <AlertCircle className="w-5 h-5 text-emerald-700" />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-emerald-800">
+              Tindak Lanjut
+            </div>
+            <div className="text-xs text-emerald-700">
+              {followUpsCount > 0 ? `${followUpsCount} agenda` : "Tidak ada"}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowFollowUpModal(true)}
+          className="px-3 py-1.5 rounded-lg text-sm font-medium border bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+        >
+          Lihat
+        </button>
+      </div>
 
-          <div className="mt-3 md:mt-0 w-full md:w-auto">
-            <div className="relative">
+      {/* NEXT */}
+      <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-indigo-200/70 grid place-items-center">
+            <Calendar className="w-5 h-5 text-indigo-700" />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-indigo-800">
+              Meeting Berikutnya
+            </div>
+            <div className="text-xs text-indigo-700">
+              {nextMeeting
+                ? `${nextMeeting.title} • ${fmtDateID(nextMeeting.date)} • ${
+                    nextMeeting.time
+                  }`
+                : "Tidak ada jadwal dekat ini"}
+            </div>
+          </div>
+        </div>
+        <button
+          disabled={!nextMeeting}
+          onClick={() => nextMeeting && handleMeetingSelect(nextMeeting)}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
+            nextMeeting
+              ? "bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+              : "bg-white text-indigo-400 border-indigo-100 cursor-not-allowed"
+          }`}
+        >
+          Detail
+        </button>
+      </div>
+    </div>
+  );
+
+  const FilterChips = () => {
+    const chips: {
+      key: "all" | "today" | "upcoming" | "ongoing" | "completed";
+      label: string;
+    }[] = [
+      { key: "all", label: "Semua" },
+      { key: "today", label: "Hari ini" },
+      { key: "upcoming", label: "Mendatang" },
+      { key: "ongoing", label: "Berlangsung" },
+      { key: "completed", label: "Selesai" },
+    ];
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        {chips.map((c) => {
+          const active = filter === c.key;
+          return (
+            <button
+              key={c.key}
+              onClick={() => setFilter(c.key)}
+              className={`px-3 py-1.5 rounded-full text-sm border ${
+                active
+                  ? "bg-green-600 text-white border-green-600"
+                  : "bg-white text-gray-700 border-green-100 hover:bg-green-50"
+              }`}
+            >
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const ListView = () => (
+    <>
+      {!isMobile && (
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Meeting Management
+          </h1>
+          <CTAButton onClick={() => setShowCreateForm(true)} />
+        </div>
+      )}
+
+      <PriorityStrip />
+
+      <div className="bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden">
+        <div className="p-5 border-b border-green-100 space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <FilterChips />
+            <div className="relative md:w-72">
               <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
                 placeholder="Cari judul meeting..."
-                className="w-full md:w-72 pl-10 pr-3 py-2.5 rounded-xl border border-green-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder:text-gray-400"
+                className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-green-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder:text-gray-400"
               />
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
@@ -1224,31 +1315,46 @@ export default function MeetingsPage() {
         </div>
 
         <div className="divide-y divide-green-50">
-          {meetings.map((m) => (
+          {filteredMeetings.map((m) => (
             <MeetingCard
               key={m.id}
               meeting={m}
               onOpen={() => handleMeetingSelect(m)}
               onStart={() => handleStartMeeting(m)}
-              onEdit={() => {
-                setEditingMeeting(m);
-                setShowEditForm(true);
-              }}
-              onNotulen={() => {
-                setSelectedMeeting(m);
-                setCurrentView("completed");
-              }}
+              onEdit={() => (setEditingMeeting(m), setShowEditForm(true))}
+              onNotulen={() => (
+                setSelectedMeeting(m), setCurrentView("completed")
+              )}
             />
           ))}
+          {filteredMeetings.length === 0 && (
+            <div className="p-8 text-center text-gray-500">
+              Tidak ada meeting untuk filter saat ini.
+            </div>
+          )}
         </div>
       </div>
+
+      {isMobile && (
+        <div className="fixed bottom-6 right-6 z-30">
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="w-14 h-14 rounded-full bg-gradient-to-r from-emerald-500 via-green-500 to-yellow-500
+                       text-white flex items-center justify-center shadow-lg hover:shadow-xl
+                       transition-all hover:-translate-y-0.5"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        </div>
+      )}
     </>
   );
 
-  /* Ongoing: debounced inputs */
+  /* ===== Ongoing (LIVE) ===== */
   const OngoingView = () => {
     if (!selectedMeeting) return null;
 
+    // helper update state meeting terpilih + daftar
     const updateMeeting = React.useCallback(
       (updater: (m: Meeting) => Meeting) => {
         const updated = updater(selectedMeeting);
@@ -1260,12 +1366,11 @@ export default function MeetingsPage() {
       [selectedMeeting]
     );
 
+    // ---------- Autosave Notulensi (meeting level) ----------
     const [meetingNotes, setMeetingNotes] = React.useState(
       selectedMeeting.notes || ""
     );
-    const meetingAutosaveRef = React.useRef<ReturnType<
-      typeof setTimeout
-    > | null>(null);
+    const meetingAutosaveRef = React.useRef<number | null>(null);
 
     React.useEffect(() => {
       setMeetingNotes(selectedMeeting.notes || "");
@@ -1273,8 +1378,11 @@ export default function MeetingsPage() {
 
     const handleMeetingNotesChange = (v: string) => {
       setMeetingNotes(v);
-      if (meetingAutosaveRef.current) clearTimeout(meetingAutosaveRef.current);
-      meetingAutosaveRef.current = setTimeout(() => {
+      if (meetingAutosaveRef.current !== null) {
+        window.clearTimeout(meetingAutosaveRef.current);
+        meetingAutosaveRef.current = null;
+      }
+      meetingAutosaveRef.current = window.setTimeout(() => {
         updateMeeting((m) => ({ ...m, notes: v }));
         meetingAutosaveRef.current = null;
       }, 800);
@@ -1282,20 +1390,21 @@ export default function MeetingsPage() {
 
     React.useEffect(() => {
       return () => {
-        if (meetingAutosaveRef.current)
-          clearTimeout(meetingAutosaveRef.current);
+        if (meetingAutosaveRef.current !== null) {
+          window.clearTimeout(meetingAutosaveRef.current);
+          meetingAutosaveRef.current = null;
+        }
       };
     }, []);
 
+    // ---------- Komponen lokal untuk setiap agenda ----------
     const AgendaRow = React.memo(function AgendaRow({
       item,
     }: {
       item: AgendaItem;
     }) {
       const [localNotes, setLocalNotes] = React.useState(item.notes ?? "");
-      const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-        null
-      );
+      const debounceRef = React.useRef<number | null>(null);
 
       React.useEffect(() => {
         setLocalNotes(item.notes ?? "");
@@ -1303,8 +1412,11 @@ export default function MeetingsPage() {
 
       const handleNotesChange = (value: string) => {
         setLocalNotes(value);
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
+        if (debounceRef.current !== null) {
+          window.clearTimeout(debounceRef.current);
+          debounceRef.current = null;
+        }
+        debounceRef.current = window.setTimeout(() => {
           updateMeeting((m) => ({
             ...m,
             agenda: m.agenda.map((ag) =>
@@ -1317,7 +1429,10 @@ export default function MeetingsPage() {
 
       React.useEffect(() => {
         return () => {
-          if (debounceRef.current) clearTimeout(debounceRef.current);
+          if (debounceRef.current !== null) {
+            window.clearTimeout(debounceRef.current);
+            debounceRef.current = null;
+          }
         };
       }, []);
 
@@ -1428,6 +1543,7 @@ export default function MeetingsPage() {
               </button>
             </div>
           </div>
+
           <ProgressIndicator
             currentStep={
               selectedMeeting.agenda.filter((a) => a.completed).length
@@ -1465,13 +1581,11 @@ export default function MeetingsPage() {
     );
   };
 
-  /* Completed (Notulensi: view + toggle edit + autosave) */
   const CompletedView = () => {
     if (!selectedMeeting) return null;
-
     const [editingNotes, setEditingNotes] = useState(false);
     const [localNotes, setLocalNotes] = useState(selectedMeeting.notes || "");
-    const saveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const saveRef = useRef<number | null>(null);
 
     useEffect(() => {
       setLocalNotes(selectedMeeting.notes || "");
@@ -1480,8 +1594,8 @@ export default function MeetingsPage() {
 
     const saveNotesDebounced = (next: string) => {
       setLocalNotes(next);
-      if (saveRef.current) clearTimeout(saveRef.current);
-      saveRef.current = setTimeout(() => {
+      if (saveRef.current !== null) window.clearTimeout(saveRef.current);
+      saveRef.current = window.setTimeout(() => {
         const updated = { ...selectedMeeting, notes: next };
         setSelectedMeeting(updated);
         setMeetings((prev) =>
@@ -1491,13 +1605,9 @@ export default function MeetingsPage() {
       }, 600);
     };
 
-    const attendedParticipants = selectedMeeting.participants.filter(
-      (p) => p.attended
-    );
-    const completedAgenda = selectedMeeting.agenda.filter((a) => a.completed);
-    const followUpAgenda = selectedMeeting.agenda.filter(
-      (a) => a.needsFollowUp
-    );
+    const attended = selectedMeeting.participants.filter((p) => p.attended);
+    const doneAgendas = selectedMeeting.agenda.filter((a) => a.completed);
+    const followUps = selectedMeeting.agenda.filter((a) => a.needsFollowUp);
 
     return (
       <div className="space-y-6">
@@ -1540,7 +1650,7 @@ export default function MeetingsPage() {
             Peserta yang Hadir
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {attendedParticipants.map((p) => (
+            {attended.map((p) => (
               <ParticipantCard key={p.id} participant={p} />
             ))}
           </div>
@@ -1551,13 +1661,13 @@ export default function MeetingsPage() {
             Hasil Pembahasan Agenda
           </h3>
           <div className="space-y-4">
-            {completedAgenda.map((item, index) => (
+            {doneAgendas.map((item, i) => (
               <div
                 key={item.id}
                 className="border-l-4 border-green-500 pl-4 py-2"
               >
                 <h4 className="font-medium text-gray-900 mb-2">
-                  {index + 1}. {item.title}
+                  {i + 1}. {item.title}
                 </h4>
                 <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
                   {item.notes || "Tidak ada catatan khusus."}
@@ -1567,20 +1677,20 @@ export default function MeetingsPage() {
           </div>
         </div>
 
-        {followUpAgenda.length > 0 && (
+        {followUps.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-yellow-100 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-yellow-500" />
               Agenda yang Perlu Tindak Lanjut
             </h3>
             <div className="space-y-4">
-              {followUpAgenda.map((item, index) => (
+              {followUps.map((item, i) => (
                 <div
                   key={item.id}
                   className="border-l-4 border-yellow-500 pl-4 py-2 bg-yellow-50 rounded-r-lg"
                 >
                   <h4 className="font-medium text-gray-900 mb-2">
-                    {index + 1}. {item.title}
+                    {i + 1}. {item.title}
                   </h4>
                   <p className="text-gray-700 mb-2">
                     {item.notes || "Perlu pembahasan lebih lanjut."}
@@ -1596,7 +1706,6 @@ export default function MeetingsPage() {
           </div>
         )}
 
-        {/* Notulensi: view or edit */}
         <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {editingNotes ? "Notulensi Meeting (Edit)" : "Notulensi Meeting"}
@@ -1638,9 +1747,8 @@ export default function MeetingsPage() {
           </p>
         </div>
       );
-
-    const config = statusConfig[selectedMeeting.status];
-    const IconComponent = config.icon;
+    const cfg = statusConfig[selectedMeeting.status];
+    const Icon = cfg.icon;
 
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-green-100">
@@ -1654,10 +1762,10 @@ export default function MeetingsPage() {
                 <span>{fmtDateID(selectedMeeting.date)}</span>
                 <span>{selectedMeeting.time}</span>
                 <span
-                  className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${config.tone}`}
+                  className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${cfg.tone}`}
                 >
-                  <IconComponent className="w-4 h-4" />
-                  {config.text}
+                  <Icon className="w-4 h-4" />
+                  {cfg.text}
                 </span>
               </div>
             </div>
@@ -1672,10 +1780,9 @@ export default function MeetingsPage() {
                     Mulai
                   </button>
                   <button
-                    onClick={() => {
-                      setEditingMeeting(selectedMeeting);
-                      setShowEditForm(true);
-                    }}
+                    onClick={() => (
+                      setEditingMeeting(selectedMeeting), setShowEditForm(true)
+                    )}
                     className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-medium flex items-center gap-2"
                   >
                     <Edit3 className="w-4 h-4" />
@@ -1686,10 +1793,9 @@ export default function MeetingsPage() {
               {selectedMeeting.status === "completed" && (
                 <>
                   <button
-                    onClick={() => {
-                      setEditingMeeting(selectedMeeting);
-                      setShowEditForm(true);
-                    }}
+                    onClick={() => (
+                      setEditingMeeting(selectedMeeting), setShowEditForm(true)
+                    )}
                     className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-medium flex items-center gap-2"
                   >
                     <Edit3 className="w-4 h-4" />
@@ -1747,7 +1853,7 @@ export default function MeetingsPage() {
   };
 
   const FollowUpModal = () => {
-    const followUpItems = meetings
+    const follow = meetings
       .filter((m) => m.status === "completed")
       .flatMap((m) =>
         m.agenda
@@ -1761,7 +1867,7 @@ export default function MeetingsPage() {
           Daftar agenda yang memerlukan tindak lanjut dari meeting yang telah
           selesai.
         </p>
-        {followUpItems.length === 0 ? (
+        {follow.length === 0 ? (
           <div className="text-center py-8">
             <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-500">
@@ -1770,7 +1876,7 @@ export default function MeetingsPage() {
           </div>
         ) : (
           <div className="space-y-4 max-h-96 overflow-y-auto">
-            {followUpItems.map((item, index) => (
+            {follow.map((item, index) => (
               <div
                 key={`${item.id}-${index}`}
                 className="border-l-4 border-yellow-500 pl-4 py-3 bg-yellow-50 rounded-r-lg"
@@ -1808,43 +1914,39 @@ export default function MeetingsPage() {
     );
   };
 
-  const renderContent = () => {
-    if (currentView === "list" || (!selectedMeeting && !isMobile))
-      return <ListView />;
-    if (currentView === "ongoing" && selectedMeeting) return <OngoingView />;
-    if (currentView === "completed" && selectedMeeting)
-      return <CompletedView />;
-    return <DetailView />;
+  /* ===== Create/Edit handlers ===== */
+  const resetDraft: CreateDraft = {
+    title: "",
+    date: "",
+    time: "",
+    agenda: [{ id: makeId(), title: "", completed: false }],
+    participants: [],
   };
+  const [newMeeting, setNewMeeting] = useState<CreateDraft>(resetDraft);
 
-  /* Create / Edit handlers */
   const handleCreateMeeting = () => {
     if (!newMeeting.title || !newMeeting.date || !newMeeting.time) return;
-
-    const builtParticipants: Participant[] = (
-      newMeeting.participants || []
-    ).map((p) => ({
-      id: p.id,
-      name: p.name.trim(),
-      department: p.department,
-      avatar: initials(p.name),
-    }));
-
-    const builtAgenda: AgendaItem[] = newMeeting.agenda
+    const participants: Participant[] = (newMeeting.participants || []).map(
+      (p) => ({
+        id: p.id,
+        name: p.name.trim(),
+        department: p.department,
+        avatar: initials(p.name),
+      })
+    );
+    const agenda: AgendaItem[] = newMeeting.agenda
       .map((a: any) => ({ ...a, title: (a.title ?? "").trim() }))
       .filter((a: any) => a.title);
-
     const meeting: Meeting = {
       id: (meetings.at(-1)?.id ?? 0) + 1,
       title: newMeeting.title.trim(),
       date: newMeeting.date,
       time: newMeeting.time,
       status: "scheduled",
-      participants: builtParticipants,
+      participants,
       notes: "",
-      agenda: builtAgenda,
+      agenda,
     };
-
     setMeetings((prev) => [...prev, meeting]);
     setShowCreateForm(false);
     setNewMeeting(resetDraft);
@@ -1852,7 +1954,6 @@ export default function MeetingsPage() {
 
   const handleSaveEditedMeeting = () => {
     if (!editingMeeting) return;
-
     const updated: Meeting = {
       ...editingMeeting,
       participants: (editingMeeting.participants || [])
@@ -1865,11 +1966,20 @@ export default function MeetingsPage() {
         .map((a) => ({ ...a, title: (a.title ?? "").trim() }))
         .filter((a) => a.title),
     };
-
     setMeetings((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
     setSelectedMeeting(updated);
     setShowEditForm(false);
     setEditingMeeting(null);
+  };
+
+  /* ===== Render ===== */
+  const renderContent = () => {
+    if (currentView === "list" || (!selectedMeeting && !isMobile))
+      return <ListView />;
+    if (currentView === "ongoing" && selectedMeeting) return <OngoingView />;
+    if (currentView === "completed" && selectedMeeting)
+      return <CompletedView />;
+    return <DetailView />;
   };
 
   return (
@@ -1880,10 +1990,9 @@ export default function MeetingsPage() {
             <div className="flex items-center gap-3">
               {currentView !== "list" && (
                 <button
-                  onClick={() => {
-                    setCurrentView("list");
-                    setSelectedMeeting(null);
-                  }}
+                  onClick={() => (
+                    setCurrentView("list"), setSelectedMeeting(null)
+                  )}
                   className="p-2 hover:bg-green-100 rounded-lg transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5 text-gray-900" />
@@ -1895,33 +2004,18 @@ export default function MeetingsPage() {
                   : selectedMeeting?.title || "Meeting"}
               </h1>
             </div>
+            {currentView === "list" && (
+              <CTAButton onClick={() => setShowCreateForm(true)} />
+            )}
           </div>
         </div>
       )}
 
       <div className={`p-4 lg:p-6 max-w-7xl mx-auto ${isMobile ? "" : "pt-6"}`}>
-        {!isMobile && currentView === "list" && (
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Meeting Management
-            </h1>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="bg-gradient-to-r from-green-500 to-yellow-500 hover:from-green-600 hover:to-yellow-600 text-white px-6 py-3 rounded-xl flex items-center gap-2 font-medium shadow-lg transition-all duration-200 transform hover:scale-105"
-            >
-              <Plus className="w-5 h-5" />
-              Buat Meeting Baru
-            </button>
-          </div>
-        )}
-
         {!isMobile && currentView !== "list" && (
           <div className="flex items-center gap-4 mb-6">
             <button
-              onClick={() => {
-                setCurrentView("list");
-                setSelectedMeeting(null);
-              }}
+              onClick={() => (setCurrentView("list"), setSelectedMeeting(null))}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 text-gray-900" />
@@ -1935,17 +2029,6 @@ export default function MeetingsPage() {
 
         {renderContent()}
       </div>
-
-      {isMobile && currentView === "list" && (
-        <div className="fixed bottom-6 right-6 z-30">
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="w-14 h-14 bg-gradient-to-r from-green-500 to-yellow-500 hover:from-green-600 hover:to-yellow-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 transform hover:scale-105"
-          >
-            <Plus className="w-6 h-6" />
-          </button>
-        </div>
-      )}
 
       {showCreateForm && (
         <Modal
